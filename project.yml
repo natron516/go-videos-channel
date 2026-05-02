@@ -1,0 +1,53 @@
+name: GospelOutreachVideo
+packages:
+  Firebase:
+    url: https://github.com/firebase/firebase-ios-sdk
+    from: "11.0.0"
+options:
+  bundleIdPrefix: com.gospeloutreacholympia
+  deploymentTarget:
+    iOS: "16.0"
+    tvOS: "16.0"
+  xcodeVersion: "16"
+
+settings:
+  base:
+    SWIFT_VERSION: "5.9"
+    ENABLE_PREVIEWS: YES
+
+targets:
+  GospelOutreachVideo:
+    type: application
+    platform: [iOS, tvOS]
+    deploymentTarget:
+      iOS: "16.0"
+      tvOS: "16.0"
+    sources:
+      - Sources
+    dependencies:
+      - package: Firebase
+        product: FirebaseRemoteConfig
+      - package: Firebase
+        product: FirebaseCore
+    entitlements:
+      path: Sources/GospelOutreach.entitlements
+      properties:
+        com.apple.developer.ubiquity-kvstore-identifier: $(TeamIdentifierPrefix)$(CFBundleIdentifier)
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gospeloutreacholympia.tv
+        DEVELOPMENT_TEAM: N93KX6VC9R
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_FILE: Sources/Info.plist
+        INFOPLIST_KEY_CFBundleDisplayName: "GO Videos Channel"
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown"
+        INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        MARKETING_VERSION: "1.1"
+        CURRENT_PROJECT_VERSION: "3"
+      tvOS:
+        ASSETCATALOG_COMPILER_APPICON_NAME: "App Icon & Top Shelf Image"
+    scheme:
+      testTargets: []

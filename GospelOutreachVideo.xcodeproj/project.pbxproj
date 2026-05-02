@@ -1,0 +1,663 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		044FFC5F9B93B0EBE3A9D495 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1616E3C0C3F1B6C58EA2E6F8 /* FirebaseCore */; };
+		0A3CB2F5F3491B625E686DFB /* Info-tvOS.plist in Resources */ = {isa = PBXBuildFile; fileRef = B56804BD45163F952A6A89DC /* Info-tvOS.plist */; };
+		0AD1F60294B31719E317444E /* SermonLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD92E99B40CCBA8DC03A528 /* SermonLibraryView.swift */; };
+		0C7298C66148AE5696764530 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 66C02F962520C695D3B6AD13 /* Assets.xcassets */; };
+		21D3DE69E94859B429B4834F /* SermonLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD92E99B40CCBA8DC03A528 /* SermonLibraryView.swift */; };
+		2AAD281AE18A3E5CF2092DC3 /* PlaylistDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5E24BBD8FF9E929DDC68A28 /* PlaylistDetailView.swift */; };
+		3EAC9BE14027DC9F3C3D5F8B /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13D72D60A6D18E0B02CF14CC /* SearchView.swift */; };
+		400B05D98D4C65295F52BEEB /* Shared.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B22376172037E8F9AA48B /* Shared.swift */; };
+		4135906417B28EBCB1369087 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 0C766F2606180BCE45350973 /* FirebaseRemoteConfig */; };
+		421227518220D54F05B3B16C /* PlaylistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B2C470C39AA68B496C693 /* PlaylistsView.swift */; };
+		51CF61EE7E25E11F93636807 /* MuxAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646E57631B8B719E54844D3F /* MuxAPI.swift */; };
+		55DB8A5AF7BD4C5DBE0F6D62 /* LiveStreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A769F42E63AF02B0A7CE9ED9 /* LiveStreamView.swift */; };
+		58D9239992C4B6BF5F72027B /* MuxModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA5B13C720CB1870157FFA85 /* MuxModels.swift */; };
+		59FDE1EB10B5A7FCD021A836 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13D72D60A6D18E0B02CF14CC /* SearchView.swift */; };
+		6914B6704E0FA70AF7D96112 /* PinLockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685CB064472934E29B70E6AE /* PinLockView.swift */; };
+		6DED98CB1E7F4A0D09DF2B47 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 5C61C0AD64DD13DEC5E84967 /* FirebaseRemoteConfig */; };
+		7085158A5E6EEF2A1560E0D0 /* LiveStreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A769F42E63AF02B0A7CE9ED9 /* LiveStreamView.swift */; };
+		7237D42BB0F9E8DF754487DD /* BrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453989F1DC1AAE3C937D73D8 /* BrowseView.swift */; };
+		72FC2B08F4ED1600EA84BBDD /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EB98D4E713668484DE5C7A0 /* HomeView.swift */; };
+		76E59ADE90BBE8204F87FFD5 /* MuxModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA5B13C720CB1870157FFA85 /* MuxModels.swift */; };
+		76FF919D5B0752221F11D7EB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB42A7C8E837D2D8F177E92 /* ContentView.swift */; };
+		7C30BAB0AADEA6EA0677E3A8 /* GospelOutreachTVApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 867C773603C1C6A5BD73A6A0 /* GospelOutreachTVApp.swift */; };
+		7D408BE1AA52D3922A2B9116 /* GospelOutreachTVApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 867C773603C1C6A5BD73A6A0 /* GospelOutreachTVApp.swift */; };
+		831FC8449C0C26DDBB61C0DF /* AutoplayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B831D5275942142F1361C54 /* AutoplayManager.swift */; };
+		83ECE79C7559D1908BC66E68 /* CategoryLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F212082C23E65755391A35E /* CategoryLibraryView.swift */; };
+		8EB64707B9B2E24B62957E5B /* PlaylistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B2C470C39AA68B496C693 /* PlaylistsView.swift */; };
+		91CFA851BF9E3370FDD61829 /* AddToPlaylistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DFE3A70452B620032D0E602 /* AddToPlaylistView.swift */; };
+		9233AE2FBF5E1344D17B1775 /* KidsLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CA6C9033A9513A86B6F38F2 /* KidsLibraryView.swift */; };
+		94971029E81DED4B56A9879F /* AddToPlaylistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DFE3A70452B620032D0E602 /* AddToPlaylistView.swift */; };
+		968F8166A2C3F0423E915A9C /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = A25A79A6CDCF39416971A7B4 /* FirebaseCore */; };
+		9BBE802B9D087B11EE3D0959 /* Info-tvOS.plist in Resources */ = {isa = PBXBuildFile; fileRef = B56804BD45163F952A6A89DC /* Info-tvOS.plist */; };
+		9E05040404305CE3CB0D0CCB /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 66C02F962520C695D3B6AD13 /* Assets.xcassets */; };
+		A179F431E1BD76AA9B09D611 /* PlaylistDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5E24BBD8FF9E929DDC68A28 /* PlaylistDetailView.swift */; };
+		A4CAB4FD63B4E28C6F19D3BA /* CategoryLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F212082C23E65755391A35E /* CategoryLibraryView.swift */; };
+		AF32DF88449F43A770136EFC /* Shared.swift in Sources */ = {isa = PBXBuildFile; fileRef = E54B22376172037E8F9AA48B /* Shared.swift */; };
+		B603BB0CFF1D2E580501DC72 /* VideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48E7B9F8772B82F3F354D570 /* VideoPlayerView.swift */; };
+		BAB9BBA00AAC9DA68BE04A15 /* PinLockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685CB064472934E29B70E6AE /* PinLockView.swift */; };
+		BB74356160C6046FF3E05032 /* MuxAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646E57631B8B719E54844D3F /* MuxAPI.swift */; };
+		BBC897417C90F1383FEFEAE8 /* VideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48E7B9F8772B82F3F354D570 /* VideoPlayerView.swift */; };
+		CA74D97C966DD2A9E99514E7 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D6139901B3F964C119566D4 /* AboutView.swift */; };
+		CB5A8B050FCAD13F8B155DDB /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EB98D4E713668484DE5C7A0 /* HomeView.swift */; };
+		DD7B191C841786D7CD1DFB4C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 670782E11CBDCC9BFCA18086 /* GoogleService-Info.plist */; };
+		DF7CB206541F1AD967E989AA /* BrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453989F1DC1AAE3C937D73D8 /* BrowseView.swift */; };
+		E29FFF9269B13A8C3E3EFFF1 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 670782E11CBDCC9BFCA18086 /* GoogleService-Info.plist */; };
+		E5634F1468F1CA47BB23010F /* AutoplayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B831D5275942142F1361C54 /* AutoplayManager.swift */; };
+		E6F7D98CAEDF1692D5F0A412 /* PlaylistModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58CEE9694631039DF5B41E9C /* PlaylistModels.swift */; };
+		E79CECE78435209C62F86880 /* PlaylistModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58CEE9694631039DF5B41E9C /* PlaylistModels.swift */; };
+		F175EC4FF1E90CA2AD1DE46D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB42A7C8E837D2D8F177E92 /* ContentView.swift */; };
+		F47EC815985D54FAEDE10A6D /* KidsLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CA6C9033A9513A86B6F38F2 /* KidsLibraryView.swift */; };
+		FFC937001C5EC9ECD6A20C28 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D6139901B3F964C119566D4 /* AboutView.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		13D72D60A6D18E0B02CF14CC /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
+		16272F9D03848DD60479FD55 /* GospelOutreach.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GospelOutreach.entitlements; sourceTree = "<group>"; };
+		1BD92E99B40CCBA8DC03A528 /* SermonLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SermonLibraryView.swift; sourceTree = "<group>"; };
+		1EB98D4E713668484DE5C7A0 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		28FAA883D0FE50917106BD16 /* GospelOutreachVideo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GospelOutreachVideo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		38730F19842EF76EB3F08D9D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		3B831D5275942142F1361C54 /* AutoplayManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AutoplayManager.swift; sourceTree = "<group>"; };
+		453989F1DC1AAE3C937D73D8 /* BrowseView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrowseView.swift; sourceTree = "<group>"; };
+		48E7B9F8772B82F3F354D570 /* VideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerView.swift; sourceTree = "<group>"; };
+		4F212082C23E65755391A35E /* CategoryLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CategoryLibraryView.swift; sourceTree = "<group>"; };
+		58CEE9694631039DF5B41E9C /* PlaylistModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistModels.swift; sourceTree = "<group>"; };
+		646E57631B8B719E54844D3F /* MuxAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MuxAPI.swift; sourceTree = "<group>"; };
+		66C02F962520C695D3B6AD13 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		670782E11CBDCC9BFCA18086 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		685CB064472934E29B70E6AE /* PinLockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinLockView.swift; sourceTree = "<group>"; };
+		6BB42A7C8E837D2D8F177E92 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		6CA6C9033A9513A86B6F38F2 /* KidsLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KidsLibraryView.swift; sourceTree = "<group>"; };
+		867C773603C1C6A5BD73A6A0 /* GospelOutreachTVApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GospelOutreachTVApp.swift; sourceTree = "<group>"; };
+		8DFE3A70452B620032D0E602 /* AddToPlaylistView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddToPlaylistView.swift; sourceTree = "<group>"; };
+		9D6139901B3F964C119566D4 /* AboutView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutView.swift; sourceTree = "<group>"; };
+		A2D6CF65055E9CC8B888DE0D /* GospelOutreachVideo.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GospelOutreachVideo.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A769F42E63AF02B0A7CE9ED9 /* LiveStreamView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveStreamView.swift; sourceTree = "<group>"; };
+		AA5B13C720CB1870157FFA85 /* MuxModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MuxModels.swift; sourceTree = "<group>"; };
+		B56804BD45163F952A6A89DC /* Info-tvOS.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "Info-tvOS.plist"; sourceTree = "<group>"; };
+		C30B2C470C39AA68B496C693 /* PlaylistsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistsView.swift; sourceTree = "<group>"; };
+		E54B22376172037E8F9AA48B /* Shared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared.swift; sourceTree = "<group>"; };
+		F5E24BBD8FF9E929DDC68A28 /* PlaylistDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistDetailView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		3C099950A90B96E1657BAA4B /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4135906417B28EBCB1369087 /* FirebaseRemoteConfig in Frameworks */,
+				968F8166A2C3F0423E915A9C /* FirebaseCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CD238C16C40CD29387BE94BB /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6DED98CB1E7F4A0D09DF2B47 /* FirebaseRemoteConfig in Frameworks */,
+				044FFC5F9B93B0EBE3A9D495 /* FirebaseCore in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		008019067ACD070DD0F5B896 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				66C02F962520C695D3B6AD13 /* Assets.xcassets */,
+				670782E11CBDCC9BFCA18086 /* GoogleService-Info.plist */,
+				16272F9D03848DD60479FD55 /* GospelOutreach.entitlements */,
+				B56804BD45163F952A6A89DC /* Info-tvOS.plist */,
+				38730F19842EF76EB3F08D9D /* Info.plist */,
+				170B8A2DFC7F181F63264614 /* App */,
+				7D44759F4D9AA4F97265FD23 /* Models */,
+				0274ED8BA4CEDE9F505BC430 /* Services */,
+				F94B2F99A798C6CF00323D90 /* Views */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		0274ED8BA4CEDE9F505BC430 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				3B831D5275942142F1361C54 /* AutoplayManager.swift */,
+				646E57631B8B719E54844D3F /* MuxAPI.swift */,
+			);
+			path = Services;
+			sourceTree = "<group>";
+		};
+		170B8A2DFC7F181F63264614 /* App */ = {
+			isa = PBXGroup;
+			children = (
+				867C773603C1C6A5BD73A6A0 /* GospelOutreachTVApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		5B0A6E3DBB632AC719DE8C61 = {
+			isa = PBXGroup;
+			children = (
+				008019067ACD070DD0F5B896 /* Sources */,
+				E5D7E73E89B0FCB2A3F40635 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7D44759F4D9AA4F97265FD23 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				AA5B13C720CB1870157FFA85 /* MuxModels.swift */,
+				58CEE9694631039DF5B41E9C /* PlaylistModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		E5D7E73E89B0FCB2A3F40635 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				28FAA883D0FE50917106BD16 /* GospelOutreachVideo.app */,
+				A2D6CF65055E9CC8B888DE0D /* GospelOutreachVideo.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F94B2F99A798C6CF00323D90 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				9D6139901B3F964C119566D4 /* AboutView.swift */,
+				8DFE3A70452B620032D0E602 /* AddToPlaylistView.swift */,
+				453989F1DC1AAE3C937D73D8 /* BrowseView.swift */,
+				4F212082C23E65755391A35E /* CategoryLibraryView.swift */,
+				6BB42A7C8E837D2D8F177E92 /* ContentView.swift */,
+				1EB98D4E713668484DE5C7A0 /* HomeView.swift */,
+				6CA6C9033A9513A86B6F38F2 /* KidsLibraryView.swift */,
+				A769F42E63AF02B0A7CE9ED9 /* LiveStreamView.swift */,
+				685CB064472934E29B70E6AE /* PinLockView.swift */,
+				F5E24BBD8FF9E929DDC68A28 /* PlaylistDetailView.swift */,
+				C30B2C470C39AA68B496C693 /* PlaylistsView.swift */,
+				13D72D60A6D18E0B02CF14CC /* SearchView.swift */,
+				1BD92E99B40CCBA8DC03A528 /* SermonLibraryView.swift */,
+				E54B22376172037E8F9AA48B /* Shared.swift */,
+				48E7B9F8772B82F3F354D570 /* VideoPlayerView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3B2FF305B2636568812898E3 /* GospelOutreachVideo_iOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = BE60DFE595841FBB5E91E8AB /* Build configuration list for PBXNativeTarget "GospelOutreachVideo_iOS" */;
+			buildPhases = (
+				73488170367F251B2EF2FA12 /* Sources */,
+				F33890C574077C9D778C8604 /* Resources */,
+				3C099950A90B96E1657BAA4B /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GospelOutreachVideo_iOS;
+			packageProductDependencies = (
+				0C766F2606180BCE45350973 /* FirebaseRemoteConfig */,
+				A25A79A6CDCF39416971A7B4 /* FirebaseCore */,
+			);
+			productName = GospelOutreachVideo_iOS;
+			productReference = 28FAA883D0FE50917106BD16 /* GospelOutreachVideo.app */;
+			productType = "com.apple.product-type.application";
+		};
+		EA2025686F29BD1605D8EF8C /* GospelOutreachVideo_tvOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D3097B8EF4B725D771429EF3 /* Build configuration list for PBXNativeTarget "GospelOutreachVideo_tvOS" */;
+			buildPhases = (
+				C56C8AC99D5534CA8799BE4C /* Sources */,
+				1F0BE0A568236627FC196B80 /* Resources */,
+				CD238C16C40CD29387BE94BB /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = GospelOutreachVideo_tvOS;
+			packageProductDependencies = (
+				5C61C0AD64DD13DEC5E84967 /* FirebaseRemoteConfig */,
+				1616E3C0C3F1B6C58EA2E6F8 /* FirebaseCore */,
+			);
+			productName = GospelOutreachVideo_tvOS;
+			productReference = A2D6CF65055E9CC8B888DE0D /* GospelOutreachVideo.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		1AA505967DB338C1D7F1C448 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+					3B2FF305B2636568812898E3 = {
+						DevelopmentTeam = N93KX6VC9R;
+						ProvisioningStyle = Automatic;
+					};
+					EA2025686F29BD1605D8EF8C = {
+						DevelopmentTeam = N93KX6VC9R;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 467A5C018797E1A87A4DE4D9 /* Build configuration list for PBXProject "GospelOutreachVideo" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 5B0A6E3DBB632AC719DE8C61;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				52989700F9B30FF08C80DE0E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = E5D7E73E89B0FCB2A3F40635 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				3B2FF305B2636568812898E3 /* GospelOutreachVideo_iOS */,
+				EA2025686F29BD1605D8EF8C /* GospelOutreachVideo_tvOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		1F0BE0A568236627FC196B80 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				9E05040404305CE3CB0D0CCB /* Assets.xcassets in Resources */,
+				E29FFF9269B13A8C3E3EFFF1 /* GoogleService-Info.plist in Resources */,
+				9BBE802B9D087B11EE3D0959 /* Info-tvOS.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F33890C574077C9D778C8604 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0C7298C66148AE5696764530 /* Assets.xcassets in Resources */,
+				DD7B191C841786D7CD1DFB4C /* GoogleService-Info.plist in Resources */,
+				0A3CB2F5F3491B625E686DFB /* Info-tvOS.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		73488170367F251B2EF2FA12 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CA74D97C966DD2A9E99514E7 /* AboutView.swift in Sources */,
+				91CFA851BF9E3370FDD61829 /* AddToPlaylistView.swift in Sources */,
+				E5634F1468F1CA47BB23010F /* AutoplayManager.swift in Sources */,
+				7237D42BB0F9E8DF754487DD /* BrowseView.swift in Sources */,
+				A4CAB4FD63B4E28C6F19D3BA /* CategoryLibraryView.swift in Sources */,
+				76FF919D5B0752221F11D7EB /* ContentView.swift in Sources */,
+				7C30BAB0AADEA6EA0677E3A8 /* GospelOutreachTVApp.swift in Sources */,
+				72FC2B08F4ED1600EA84BBDD /* HomeView.swift in Sources */,
+				9233AE2FBF5E1344D17B1775 /* KidsLibraryView.swift in Sources */,
+				55DB8A5AF7BD4C5DBE0F6D62 /* LiveStreamView.swift in Sources */,
+				BB74356160C6046FF3E05032 /* MuxAPI.swift in Sources */,
+				76E59ADE90BBE8204F87FFD5 /* MuxModels.swift in Sources */,
+				BAB9BBA00AAC9DA68BE04A15 /* PinLockView.swift in Sources */,
+				2AAD281AE18A3E5CF2092DC3 /* PlaylistDetailView.swift in Sources */,
+				E6F7D98CAEDF1692D5F0A412 /* PlaylistModels.swift in Sources */,
+				421227518220D54F05B3B16C /* PlaylistsView.swift in Sources */,
+				3EAC9BE14027DC9F3C3D5F8B /* SearchView.swift in Sources */,
+				0AD1F60294B31719E317444E /* SermonLibraryView.swift in Sources */,
+				AF32DF88449F43A770136EFC /* Shared.swift in Sources */,
+				BBC897417C90F1383FEFEAE8 /* VideoPlayerView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C56C8AC99D5534CA8799BE4C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				FFC937001C5EC9ECD6A20C28 /* AboutView.swift in Sources */,
+				94971029E81DED4B56A9879F /* AddToPlaylistView.swift in Sources */,
+				831FC8449C0C26DDBB61C0DF /* AutoplayManager.swift in Sources */,
+				DF7CB206541F1AD967E989AA /* BrowseView.swift in Sources */,
+				83ECE79C7559D1908BC66E68 /* CategoryLibraryView.swift in Sources */,
+				F175EC4FF1E90CA2AD1DE46D /* ContentView.swift in Sources */,
+				7D408BE1AA52D3922A2B9116 /* GospelOutreachTVApp.swift in Sources */,
+				CB5A8B050FCAD13F8B155DDB /* HomeView.swift in Sources */,
+				F47EC815985D54FAEDE10A6D /* KidsLibraryView.swift in Sources */,
+				7085158A5E6EEF2A1560E0D0 /* LiveStreamView.swift in Sources */,
+				51CF61EE7E25E11F93636807 /* MuxAPI.swift in Sources */,
+				58D9239992C4B6BF5F72027B /* MuxModels.swift in Sources */,
+				6914B6704E0FA70AF7D96112 /* PinLockView.swift in Sources */,
+				A179F431E1BD76AA9B09D611 /* PlaylistDetailView.swift in Sources */,
+				E79CECE78435209C62F86880 /* PlaylistModels.swift in Sources */,
+				8EB64707B9B2E24B62957E5B /* PlaylistsView.swift in Sources */,
+				59FDE1EB10B5A7FCD021A836 /* SearchView.swift in Sources */,
+				21D3DE69E94859B429B4834F /* SermonLibraryView.swift in Sources */,
+				400B05D98D4C65295F52BEEB /* Shared.swift in Sources */,
+				B603BB0CFF1D2E580501DC72 /* VideoPlayerView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		38CDF7A6DDA76DC0189993D1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_ENTITLEMENTS = Sources/GospelOutreach.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = N93KX6VC9R;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "GO Videos Channel";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gospeloutreacholympia.tv;
+				PRODUCT_NAME = GospelOutreachVideo;
+				SDKROOT = appletvos;
+				TARGETED_DEVICE_FAMILY = 3;
+				TVOS_DEPLOYMENT_TARGET = 16.0;
+			};
+			name = Release;
+		};
+		B05E15DCC4858B521207DCA3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+				TVOS_DEPLOYMENT_TARGET = 16.0;
+			};
+			name = Debug;
+		};
+		BF0D5853E2168C0E830F4AB7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
+				CODE_SIGN_ENTITLEMENTS = Sources/GospelOutreach.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = N93KX6VC9R;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "GO Videos Channel";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gospeloutreacholympia.tv;
+				PRODUCT_NAME = GospelOutreachVideo;
+				SDKROOT = appletvos;
+				TARGETED_DEVICE_FAMILY = 3;
+				TVOS_DEPLOYMENT_TARGET = 16.0;
+			};
+			name = Debug;
+		};
+		CA0A8033216900C753683A8A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/GospelOutreach.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = N93KX6VC9R;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "GO Videos Channel";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gospeloutreacholympia.tv;
+				PRODUCT_NAME = GospelOutreachVideo;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		E421303F277A2627CD042A30 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+				TVOS_DEPLOYMENT_TARGET = 16.0;
+			};
+			name = Release;
+		};
+		F015E78FCC258B962FF41422 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Sources/GospelOutreach.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 3;
+				DEVELOPMENT_TEAM = N93KX6VC9R;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Sources/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "GO Videos Channel";
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.1;
+				PRODUCT_BUNDLE_IDENTIFIER = com.gospeloutreacholympia.tv;
+				PRODUCT_NAME = GospelOutreachVideo;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		467A5C018797E1A87A4DE4D9 /* Build configuration list for PBXProject "GospelOutreachVideo" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				B05E15DCC4858B521207DCA3 /* Debug */,
+				E421303F277A2627CD042A30 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		BE60DFE595841FBB5E91E8AB /* Build configuration list for PBXNativeTarget "GospelOutreachVideo_iOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CA0A8033216900C753683A8A /* Debug */,
+				F015E78FCC258B962FF41422 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		D3097B8EF4B725D771429EF3 /* Build configuration list for PBXNativeTarget "GospelOutreachVideo_tvOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BF0D5853E2168C0E830F4AB7 /* Debug */,
+				38CDF7A6DDA76DC0189993D1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		52989700F9B30FF08C80DE0E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 11.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0C766F2606180BCE45350973 /* FirebaseRemoteConfig */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 52989700F9B30FF08C80DE0E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseRemoteConfig;
+		};
+		1616E3C0C3F1B6C58EA2E6F8 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 52989700F9B30FF08C80DE0E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		5C61C0AD64DD13DEC5E84967 /* FirebaseRemoteConfig */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 52989700F9B30FF08C80DE0E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseRemoteConfig;
+		};
+		A25A79A6CDCF39416971A7B4 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 52989700F9B30FF08C80DE0E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 1AA505967DB338C1D7F1C448 /* Project object */;
+}
