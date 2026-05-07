@@ -29,7 +29,7 @@ class MuxAPI: ObservableObject {
         let req = request(path: "/video/v1/assets?limit=100&order_direction=desc")
         let (data, _) = try await URLSession.shared.data(for: req)
         let response = try JSONDecoder().decode(MuxAssetsResponse.self, from: data)
-        return response.data.filter { $0.status == "ready" }
+        return response.data.filter { $0.status == "ready" || $0.status == "preparing" }
     }
 
     // MARK: - Live Streams

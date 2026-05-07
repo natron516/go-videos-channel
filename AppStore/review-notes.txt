@@ -1,0 +1,33 @@
+App Review Notes — GO Videos Channel
+Gospel Outreach of Olympia
+
+ABOUT THE APP
+GO Videos Channel is a video streaming app for Gospel Outreach of Olympia, a Spirit-filled Christian church located in Olympia, Washington. The app provides access to the church's video library and live streams.
+
+CONTENT
+All video content is produced by and for Gospel Outreach of Olympia. Content categories include:
+• Sermons — recordings of church services and pastoral messages
+• Children's Videos — faith-based video content for children
+• Music Videos — worship music and gospel performances
+• Performances — special events and church productions
+
+Content is entirely church-produced ministry media. There is no user-generated content. All videos are appropriate for all ages.
+
+PIN-PROTECTED SECTION
+The Sermons section is protected by a PIN code intended for administrative or internal church use.
+
+Reviewer PIN: 1776
+
+Please use this PIN if prompted when accessing the Sermons section during review.
+
+LIVE STREAMING
+The app supports live streaming of church services via Mux. Live streams are only active during scheduled church services. If no live stream is available during review, please test the on-demand video library which is always accessible.
+
+NO ACCOUNT REQUIRED
+The app does not require users to create an account or log in. All browsing and playback is available immediately upon launch.
+
+THIRD-PARTY SERVICES
+• Mux — video delivery and live streaming infrastructure
+• iCloud — used for custom playlist sync (Apple-managed; no personal data shared with us)
+
+Thank you for reviewing GO Videos Channel. Please feel free to reach out if you have any questions.

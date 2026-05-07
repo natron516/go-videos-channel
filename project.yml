@@ -3,6 +3,12 @@ packages:
   Firebase:
     url: https://github.com/firebase/firebase-ios-sdk
     from: "11.0.0"
+  GoogleSignIn:
+    url: https://github.com/google/GoogleSignIn-iOS
+    from: "8.0.0"
+  MuxStatsAVPlayer:
+    url: https://github.com/muxinc/mux-stats-sdk-avplayer
+    from: "3.0.0"
 options:
   bundleIdPrefix: com.gospeloutreacholympia
   deploymentTarget:
@@ -16,38 +22,81 @@ settings:
     ENABLE_PREVIEWS: YES
 
 targets:
-  GospelOutreachVideo:
+  GospelOutreachVideo_iOS:
     type: application
-    platform: [iOS, tvOS]
-    deploymentTarget:
-      iOS: "16.0"
-      tvOS: "16.0"
+    platform: iOS
+    deploymentTarget: "16.0"
     sources:
-      - Sources
+      - path: Sources
+        excludes:
+          - Info-tvOS.plist
+          - Assets.xcassets/PinLockView.dataset
+          - Assets.xcassets/KidsLibraryView.dataset
     dependencies:
       - package: Firebase
         product: FirebaseRemoteConfig
       - package: Firebase
         product: FirebaseCore
-    entitlements:
-      path: Sources/GospelOutreach.entitlements
-      properties:
-        com.apple.developer.ubiquity-kvstore-identifier: $(TeamIdentifierPrefix)$(CFBundleIdentifier)
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: GoogleSignIn
+        product: GoogleSignIn
+      - package: GoogleSignIn
+        product: GoogleSignInSwift
+      - package: MuxStatsAVPlayer
+        product: MUXSDKStats
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gospeloutreacholympia.tv
         DEVELOPMENT_TEAM: N93KX6VC9R
         CODE_SIGN_STYLE: Automatic
         GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_ENTITLEMENTS: Sources/GospelOutreach.entitlements
         INFOPLIST_FILE: Sources/Info.plist
-        INFOPLIST_KEY_CFBundleDisplayName: "GO Videos Channel"
+        INFOPLIST_KEY_CFBundleDisplayName: "GO Media"
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        MARKETING_VERSION: "1.1"
-        CURRENT_PROJECT_VERSION: "3"
-      tvOS:
+        MARKETING_VERSION: "1.4"
+        CURRENT_PROJECT_VERSION: "29"
+    scheme:
+      testTargets: []
+
+  GospelOutreachVideo_tvOS:
+    type: application
+    platform: tvOS
+    deploymentTarget: "16.0"
+    sources:
+      - path: Sources
+        excludes:
+          - Info.plist
+          - Assets.xcassets/PinLockView.dataset
+          - Assets.xcassets/KidsLibraryView.dataset
+    dependencies:
+      - package: Firebase
+        product: FirebaseRemoteConfig
+      - package: Firebase
+        product: FirebaseCore
+      - package: Firebase
+        product: FirebaseAuth
+      - package: Firebase
+        product: FirebaseFirestore
+      - package: MuxStatsAVPlayer
+        product: MUXSDKStats
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gospeloutreacholympia.tv
+        DEVELOPMENT_TEAM: N93KX6VC9R
+        CODE_SIGN_STYLE: Automatic
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_ENTITLEMENTS: Sources/GospelOutreach-tvOS.entitlements
+        INFOPLIST_FILE: Sources/Info-tvOS.plist
+        INFOPLIST_KEY_CFBundleDisplayName: "GO Media"
         ASSETCATALOG_COMPILER_APPICON_NAME: "App Icon & Top Shelf Image"
+        MARKETING_VERSION: "1.4"
+        CURRENT_PROJECT_VERSION: "29"
     scheme:
       testTargets: []

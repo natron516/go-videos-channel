@@ -161,11 +161,14 @@ private struct SearchToolbarModifier: ViewModifier {
 extension View {
     func appBackground() -> some View {
         self.background {
-            Image("AppBackground")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .ignoresSafeArea()
-                .opacity(0.35)
+            ZStack {
+                Color.black.ignoresSafeArea()
+                Image("AppBackground")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .ignoresSafeArea()
+                    .opacity(0.35)
+            }
         }
     }
 }

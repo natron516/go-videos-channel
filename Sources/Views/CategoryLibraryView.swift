@@ -16,19 +16,27 @@ struct CategoryLibraryView: View {
         #if os(tvOS)
         return Array(repeating: GridItem(.flexible(), spacing: 40), count: 4)
         #else
-        return UIDevice.current.userInterfaceIdiom == .pad ? Array(repeating: GridItem(.flexible(), spacing: 16), count: 4) : Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
+        return UIDevice.current.userInterfaceIdiom == .pad ? Array(repeating: GridItem(.flexible(), spacing: 20), count: 3) : Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
         #endif
     }
 
     var body: some View {
         Group {
             if isLoading {
-                ProgressView("Loading \(title)…")
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    Color.clear.appBackground()
+                    ProgressView("Loading \(title)…")
+                }
             } else if assets.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: icon).font(.system(size: 60)).foregroundColor(.secondary)
-                    Text("No \(title) Yet").font(.title)
-                    Text("Tag videos with: \(category)").font(.caption).foregroundColor(.secondary)
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    Color.clear.appBackground()
+                    VStack(spacing: 16) {
+                        Image(systemName: icon).font(.system(size: 60)).foregroundColor(.secondary)
+                        Text("No \(title) Yet").font(.title)
+                        Text("Tag videos with: \(category)").font(.caption).foregroundColor(.secondary)
+                    }
                 }
             } else {
                 ScrollView {

@@ -1,9 +1,11 @@
 import Foundation
+import FirebaseAuth
+import FirebaseFirestore
 
 struct Playlist: Identifiable, Codable {
     let id: UUID
     var name: String
-    var assetIds: [String]  // Mux asset IDs
+    var assetIds: [String]
     var createdAt: Date
 
     init(name: String, assetIds: [String] = []) {
@@ -14,30 +16,31 @@ struct Playlist: Identifiable, Codable {
     }
 }
 
+@MainActor
 class PlaylistManager: ObservableObject {
     static let shared = PlaylistManager()
 
     @Published var playlists: [Playlist] = []
 
-    private let storageKey = "user_playlists"
-    private let icloud = NSUbiquitousKeyValueStore.default
+    private var uid: String? { Auth.auth().currentUser?.uid }
+    private var db = Firestore.firestore()
 
     private init() {
-        load()
-        // Listen for iCloud changes from other devices
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(icloudDidChange),
-            name: NSUbiquitousKeyValueStore.didChangeExternallyNotification,
-            object: icloud
-        )
-        icloud.synchronize()
+        // Reload playlists whenever auth state changes
+        Auth.auth().addStateDidChangeListener { [weak self] _, user in
+            Task { @MainActor in
+                if user != nil {
+                    await self?.load()
+                } else {
+                    self?.playlists = []
+                }
+            }
+        }
     }
 
-    @objc private func icloudDidChange(_ notification: Notification) {
-        DispatchQueue.main.async { [weak self] in
-            self?.load()
-        }
+    private var collection: CollectionReference? {
+        guard let uid else { return nil }
+        return db.collection("users").document(uid).collection("playlists")
     }
 
     // MARK: - CRUD
@@ -45,58 +48,94 @@ class PlaylistManager: ObservableObject {
     func create(name: String) -> Playlist {
         let playlist = Playlist(name: name)
         playlists.append(playlist)
-        save()
+        Task { await save(playlist) }
         return playlist
     }
 
     func delete(id: UUID) {
         playlists.removeAll { $0.id == id }
-        save()
+        Task { await remove(id: id) }
     }
 
     func rename(id: UUID, to name: String) {
         guard let idx = playlists.firstIndex(where: { $0.id == id }) else { return }
         playlists[idx].name = name
-        save()
+        Task { await save(playlists[idx]) }
     }
 
     func addAsset(_ assetId: String, to playlistId: UUID) {
         guard let idx = playlists.firstIndex(where: { $0.id == playlistId }) else { return }
         if !playlists[idx].assetIds.contains(assetId) {
             playlists[idx].assetIds.append(assetId)
-            save()
+            Task { await save(playlists[idx]) }
         }
     }
 
     func removeAsset(_ assetId: String, from playlistId: UUID) {
         guard let idx = playlists.firstIndex(where: { $0.id == playlistId }) else { return }
         playlists[idx].assetIds.removeAll { $0 == assetId }
-        save()
+        Task { await save(playlists[idx]) }
     }
 
     func moveAsset(in playlistId: UUID, from source: IndexSet, to destination: Int) {
         guard let idx = playlists.firstIndex(where: { $0.id == playlistId }) else { return }
         playlists[idx].assetIds.move(fromOffsets: source, toOffset: destination)
-        save()
+        Task { await save(playlists[idx]) }
     }
 
-    // MARK: - Persistence (iCloud + local fallback)
+    // MARK: - Firestore
 
-    private func save() {
-        guard let data = try? JSONEncoder().encode(playlists) else { return }
-        // Save to iCloud
-        icloud.set(data, forKey: storageKey)
-        icloud.synchronize()
-        // Local backup
-        UserDefaults.standard.set(data, forKey: storageKey)
+    private func load() async {
+        guard let col = collection else { return }
+        do {
+            let snap = try await col.getDocuments()
+            var loaded: [Playlist] = []
+            for doc in snap.documents {
+                let d = doc.data()
+                guard let idStr = d["id"] as? String,
+                      let id = UUID(uuidString: idStr),
+                      let name = d["name"] as? String,
+                      let assetIds = d["assetIds"] as? [String],
+                      let ts = d["createdAt"] as? Timestamp else { continue }
+                loaded.append(Playlist(id: id, name: name, assetIds: assetIds, createdAt: ts.dateValue()))
+            }
+            playlists = loaded.sorted { $0.createdAt < $1.createdAt }
+        } catch {
+            print("PlaylistManager load error: \(error)")
+        }
     }
 
-    private func load() {
-        // Prefer iCloud, fall back to local
-        let data = icloud.data(forKey: storageKey)
-            ?? UserDefaults.standard.data(forKey: storageKey)
-        guard let data = data,
-              let decoded = try? JSONDecoder().decode([Playlist].self, from: data) else { return }
-        playlists = decoded
+    private func save(_ playlist: Playlist) async {
+        guard let col = collection else { return }
+        let data: [String: Any] = [
+            "id": playlist.id.uuidString,
+            "name": playlist.name,
+            "assetIds": playlist.assetIds,
+            "createdAt": Timestamp(date: playlist.createdAt)
+        ]
+        do {
+            try await col.document(playlist.id.uuidString).setData(data)
+        } catch {
+            print("PlaylistManager save error: \(error)")
+        }
+    }
+
+    private func remove(id: UUID) async {
+        guard let col = collection else { return }
+        do {
+            try await col.document(id.uuidString).delete()
+        } catch {
+            print("PlaylistManager delete error: \(error)")
+        }
+    }
+}
+
+// Extra init for decoding from Firestore fields
+extension Playlist {
+    init(id: UUID, name: String, assetIds: [String], createdAt: Date) {
+        self.id = id
+        self.name = name
+        self.assetIds = assetIds
+        self.createdAt = createdAt
     }
 }

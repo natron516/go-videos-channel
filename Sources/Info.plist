@@ -14,5 +14,20 @@
         <key>TVTopShelfPrimaryImageWide</key>
         <string>Top Shelf Image Wide</string>
     </dict>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>GO Media uses Apple Music to stream worship albums and playlists.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>audio</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.419198793314-3ajdjnoe3kr0jkmki9ibnfacrm538boh</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>

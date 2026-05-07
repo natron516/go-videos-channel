@@ -88,8 +88,9 @@ class AutoplayManager: ObservableObject {
         preloadedItem = nil
         preloadedURL = nil
 
+        let nextAsset = playlist[next]
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [self] in
-            playNextInExistingPlayer(url: url, preloadedItem: item)
+            playNextInExistingPlayer(url: url, preloadedItem: item, asset: nextAsset)
             // Start preloading the one after that
             preloadNext()
         }

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Gospel Outreach — Video Admin</title>
+<style>
+  body { font-family: -apple-system, sans-serif; background: #1a1a1a; color: #fff; padding: 40px; }
+  h1 { font-size: 24px; margin-bottom: 8px; }
+  p.sub { color: #888; margin-bottom: 32px; }
+  .asset { background: #2a2a2a; border-radius: 12px; padding: 20px; margin-bottom: 16px; display: flex; align-items: center; gap: 16px; }
+  .thumb { width: 160px; height: 90px; object-fit: cover; border-radius: 8px; background: #333; flex-shrink: 0; }
+  .info { flex: 1; }
+  .title-input { background: #333; color: #fff; border: 1px solid #555; border-radius: 6px; padding: 6px 10px; font-size: 14px; width: 100%; margin-bottom: 8px; box-sizing: border-box; }
+  .row { display: flex; gap: 10px; align-items: center; }
+  select { background: #333; color: #fff; border: 1px solid #555; border-radius: 6px; padding: 6px 10px; font-size: 14px; }
+  input[type=text] { background: #333; color: #fff; border: 1px solid #555; border-radius: 6px; padding: 6px 10px; font-size: 14px; width: 180px; }
+  button.save { background: #0a84ff; color: #fff; border: none; border-radius: 6px; padding: 8px 18px; font-size: 14px; cursor: pointer; }
+  button.save:hover { background: #0070e0; }
+  .status { font-size: 12px; color: #4cd964; margin-left: 8px; display: none; }
+  .duration { color: #888; font-size: 12px; margin-top: 4px; }
+  .login { max-width: 400px; margin: 80px auto; background: #2a2a2a; border-radius: 16px; padding: 40px; text-align: center; }
+  .login input { width: 100%; margin: 8px 0; padding: 10px; border-radius: 8px; border: 1px solid #555; background: #333; color: #fff; font-size: 15px; box-sizing: border-box; }
+  .login button { margin-top: 16px; width: 100%; padding: 12px; background: #0a84ff; color: #fff; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div id="login-screen" class="login">
+  <h2>Gospel Outreach Admin</h2>
+  <p style="color:#888">Enter your Mux credentials</p>
+  <input id="tokenId" type="text" placeholder="Token ID" />
+  <input id="secretKey" type="password" placeholder="Secret Key" />
+  <button onclick="connect()">Connect</button>
+  <p id="login-error" style="color:red;display:none">Invalid credentials</p>
+</div>
+
+<div id="main" style="display:none">
+  <h1>Gospel Outreach — Video Manager</h1>
+  <p class="sub">Set categories and titles for your videos. Changes sync to the app instantly.</p>
+  <div id="assets"></div>
+</div>
+
+<script>
+let TOKEN_ID, SECRET_KEY;
+
+const CATEGORIES = ['sermon','kids','music','performance'];
+const CATEGORY_LABELS = { sermon:'Sermons', kids:"Children's", music:'Music Videos', performance:'Performances' };
+
+async function connect() {
+  TOKEN_ID = document.getElementById('tokenId').value.trim();
+  SECRET_KEY = document.getElementById('secretKey').value.trim();
+  const res = await muxGet('/video/v1/assets?limit=5');
+  if (res.error) {
+    document.getElementById('login-error').style.display = 'block';
+    return;
+  }
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('main').style.display = 'block';
+  loadAssets();
+}
+
+async function muxGet(path) {
+  const res = await fetch('https://api.mux.com' + path, {
+    headers: { 'Authorization': 'Basic ' + btoa(TOKEN_ID + ':' + SECRET_KEY) }
+  });
+  return res.json();
+}
+
+async function muxPatch(path, body) {
+  const res = await fetch('https://api.mux.com' + path, {
+    method: 'PATCH',
+    headers: {
+      'Authorization': 'Basic ' + btoa(TOKEN_ID + ':' + SECRET_KEY),
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+async function loadAssets() {
+  const data = await muxGet('/video/v1/assets?limit=100&order_direction=desc');
+  const assets = (data.data || []).filter(a => a.status === 'ready');
+  const container = document.getElementById('assets');
+  container.innerHTML = '';
+  assets.forEach(asset => {
+    let pass = {};
+    try { pass = JSON.parse(asset.passthrough || '{}'); } catch(e) {}
+    const pid = asset.playback_ids?.[0]?.id;
+    const thumb = pid ? `https://image.mux.com/${pid}/thumbnail.jpg?width=320&time=5` : '';
+    const dur = asset.duration ? formatDur(asset.duration) : '';
+
+    const el = document.createElement('div');
+    el.className = 'asset';
+    el.innerHTML = `
+      ${thumb ? `<img class="thumb" src="${thumb}" onerror="this.style.background='#444';this.src=''">` : '<div class="thumb"></div>'}
+      <div class="info">
+        <input class="title-input" type="text" placeholder="Video title" value="${esc(pass.title || '')}" id="title-${asset.id}">
+        <div class="row">
+          <input type="text" placeholder="Speaker (optional)" value="${esc(pass.speaker || '')}" id="speaker-${asset.id}" style="width:160px">
+          <select id="cat-${asset.id}">
+            <option value="">— Category —</option>
+            ${CATEGORIES.map(c => `<option value="${c}" ${pass.category===c?'selected':''}>${CATEGORY_LABELS[c]}</option>`).join('')}
+          </select>
+          <button class="save" onclick="save('${asset.id}')">Save</button>
+          <span class="status" id="status-${asset.id}">✓ Saved</span>
+        </div>
+        ${dur ? `<div class="duration">${dur}</div>` : ''}
+      </div>`;
+    container.appendChild(el);
+  });
+}
+
+async function save(id) {
+  const title = document.getElementById(`title-${id}`).value.trim();
+  const speaker = document.getElementById(`speaker-${id}`).value.trim();
+  const category = document.getElementById(`cat-${id}`).value;
+
+  const pass = {};
+  if (title) pass.title = title;
+  if (speaker) pass.speaker = speaker;
+  if (category) pass.category = category;
+
+  await muxPatch(`/video/v1/assets/${id}`, { passthrough: JSON.stringify(pass) });
+
+  const el = document.getElementById(`status-${id}`);
+  el.style.display = 'inline';
+  setTimeout(() => el.style.display = 'none', 2000);
+}
+
+function formatDur(s) {
+  const m = Math.floor(s/60), sec = Math.floor(s%60);
+  return `${m}:${sec.toString().padStart(2,'0')}`;
+}
+
+function esc(s) { return s.replace(/"/g,'&quot;'); }
+</script>
+</body>
+</html>

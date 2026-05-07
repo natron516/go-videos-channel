@@ -12,18 +12,26 @@ struct SermonLibraryView: View {
         #if os(tvOS)
         return Array(repeating: GridItem(.flexible(), spacing: 40), count: 4)
         #else
-        return UIDevice.current.userInterfaceIdiom == .pad ? Array(repeating: GridItem(.flexible(), spacing: 16), count: 4) : Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
+        return UIDevice.current.userInterfaceIdiom == .pad ? Array(repeating: GridItem(.flexible(), spacing: 20), count: 3) : Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
         #endif
     }
 
     var body: some View {
         Group {
             if isLoading {
-                ProgressView("Loading Sermons…")
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    Color.clear.appBackground()
+                    ProgressView("Loading Sermons…")
+                }
             } else if assets.isEmpty {
-                VStack(spacing: 16) {
-                    Image(systemName: "film.stack").font(.system(size: 60)).foregroundColor(.secondary)
-                    Text("No Sermons Yet").font(.title)
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    Color.clear.appBackground()
+                    VStack(spacing: 16) {
+                        Image(systemName: "film.stack").font(.system(size: 60)).foregroundColor(.secondary)
+                        Text("No Sermons Yet").font(.title)
+                    }
                 }
             } else {
                 ScrollView {
@@ -122,28 +130,62 @@ struct SermonCardView: View {
                     }
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(alignment: .topTrailing) {
+                    if asset.status == "preparing" {
+                        Text("● LIVE")
+                            .font(.caption.bold())
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 3)
+                            .background(Color.red)
+                            .clipShape(Capsule())
+                            .padding(6)
+                    }
+                }
 
             Text(asset.title)
                 .font(.subheadline.bold())
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .foregroundColor(.primary)
-                .frame(height: 40, alignment: .top)
+                .frame(minHeight: 40, alignment: .top)
 
             if let speaker = asset.speaker {
                 Text(speaker).font(.caption).foregroundColor(.secondary).multilineTextAlignment(.center)
             }
-            if let duration = asset.duration {
-                Text(formatDuration(duration)).font(.caption).foregroundColor(.secondary)
+
+            HStack(spacing: 6) {
+                if let date = asset.formattedDate {
+                    Text(date).font(.caption).foregroundColor(.secondary)
+                }
+                if asset.formattedDate != nil, asset.duration != nil {
+                    Text("·").font(.caption).foregroundColor(.secondary)
+                }
+                if let duration = asset.duration {
+                    Text(formatDuration(duration)).font(.caption).foregroundColor(.secondary)
+                }
             }
+
+            Spacer(minLength: 0)
         }
         .padding(10)
+        #if os(tvOS)
         .overlay(
             RoundedRectangle(cornerRadius: 14)
                 .stroke(Color.white, lineWidth: isFocused ? 4 : 0)
         )
         .scaleEffect(isFocused ? 1.05 : 1.0)
         .animation(.easeInOut(duration: 0.15), value: isFocused)
+        #else
+        .background(
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.white.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+        )
+        #endif
     }
 
     func formatDuration(_ seconds: Double) -> String {

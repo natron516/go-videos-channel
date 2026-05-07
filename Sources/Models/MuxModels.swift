@@ -9,10 +9,12 @@ struct MuxAsset: Identifiable, Decodable {
     let playbackIds: [MuxPlaybackId]?
     let passthrough: String? // category tag ("sermon", "children", "music", "performance")
     let meta: MuxAssetMeta?
+    let createdAt: String?
 
     enum CodingKeys: String, CodingKey {
         case id, status, duration, passthrough, meta
         case playbackIds = "playback_ids"
+        case createdAt = "created_at"
     }
 
     var playbackId: String? {
@@ -36,8 +38,17 @@ struct MuxAsset: Identifiable, Decodable {
     }
 
     var title: String {
-        // Priority: Mux meta.title → passthrough JSON title → asset ID
-        meta?.title ?? passthroughJSON?["title"] ?? "Untitled"
+        // Priority: Mux meta.title → passthrough JSON title → "Sermon"
+        meta?.title ?? passthroughJSON?["title"] ?? "Sermon"
+    }
+
+    var formattedDate: String? {
+        guard let ts = createdAt, let interval = Double(ts) else { return nil }
+        let date = Date(timeIntervalSince1970: interval)
+        let f = DateFormatter()
+        f.dateStyle = .medium
+        f.timeStyle = .none
+        return f.string(from: date)
     }
 
     var speaker: String? {
@@ -74,14 +85,23 @@ struct MuxLiveStream: Identifiable, Decodable {
     let status: String // "active", "idle", "disabled"
     let playbackIds: [MuxPlaybackId]?
     let streamKey: String?
+    let meta: MuxAssetMeta?
+    let passthrough: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, status
+        case id, status, meta, passthrough
         case playbackIds = "playback_ids"
         case streamKey = "stream_key"
     }
 
+    var isSermon: Bool {
+        guard let p = passthrough?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased() else { return false }
+        return p == "sermon" || p.hasPrefix("{\"category\":\"sermon")
+    }
+
     var isLive: Bool { status == "active" }
+
+    var title: String { meta?.title ?? "Live Service" }
 
     var playbackId: String? {
         playbackIds?.first?.id

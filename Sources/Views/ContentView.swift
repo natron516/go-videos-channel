@@ -14,25 +14,13 @@ struct TabBarOnlyModifier: ViewModifier {
 
 struct ContentView: View {
     @EnvironmentObject var api: MuxAPI
-    @State private var sermonsUnlocked = false
+
 
     var body: some View {
         ZStack(alignment: .top) {
             tabContent
 
-            #if os(tvOS)
-            HStack {
-                Text("Gospel Outreach")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(.white)
-                    .padding(.leading, 20)
-                    .offset(y: -12)
-                Spacer()
-            }
-            .frame(height: 64)
-            .zIndex(999)
-            .allowsHitTesting(false)
-            #endif
+
         }
     }
 
@@ -42,13 +30,7 @@ struct ContentView: View {
             NavigationStack { HomeView() }
                 .tabItem { Label("Home", systemImage: "house.fill") }
 
-            NavigationStack {
-                if sermonsUnlocked {
-                    SermonLibraryView()
-                } else {
-                    PinLockView { sermonsUnlocked = true }
-                }
-            }
+            NavigationStack { SermonLibraryView() }
             .tabItem { Label("Sermons", systemImage: "film.stack") }
 
             NavigationStack {
@@ -65,6 +47,11 @@ struct ContentView: View {
                 CategoryLibraryView(title: "Performances", category: "performance", icon: "theatermasks.fill")
             }
             .tabItem { Label("Shows", systemImage: "theatermasks.fill") }
+
+            #if !os(tvOS)
+            NavigationStack { AppleMusicView() }
+                .tabItem { Label("Listen", systemImage: "headphones") }
+            #endif
 
             NavigationStack { PlaylistsView() }
                 .tabItem { Label("Lists", systemImage: "music.note.list") }

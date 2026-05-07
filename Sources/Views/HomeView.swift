@@ -8,6 +8,11 @@ struct HomeView: View {
     @State private var isLoading = true
     @State private var addToPlaylistAssetId: String?
     @State private var showAddToPlaylist = false
+    @State private var showLinkTV = false
+    @State private var showAbout = false
+    @State private var showWatchTimer = false
+    @State private var showSearch = false
+
 
 
     private var tvOSSpacing: Bool {
@@ -28,7 +33,59 @@ struct HomeView: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 48) {
+            VStack(alignment: .leading, spacing: 16) {
+
+                // Logo header
+                #if os(tvOS)
+                if let uiImage = UIImage(named: "NavLogo") {
+                    HStack {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .interpolation(.high)
+                            .scaledToFit()
+                            .frame(height: 120)
+                        Spacer()
+                    }
+                    .padding(.horizontal, 40)
+                    .padding(.top, -150)
+                }
+                #else
+                if let uiImage = UIImage(named: "NavLogo") {
+                    HStack {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(height: UIDevice.current.userInterfaceIdiom == .pad ? 80 : 64)
+                        Spacer()
+                        if UIDevice.current.userInterfaceIdiom == .pad {
+                            Button { showSearch = true } label: {
+                                Image(systemName: "magnifyingglass")
+                                    .font(.system(size: 30))
+                            }
+                            Menu {
+                                Button { showLinkTV = true } label: {
+                                    Label("Link Apple TV", systemImage: "appletv")
+                                }
+                                Button { showWatchTimer = true } label: {
+                                    WatchTimerMenuLabel()
+                                }
+                                Divider()
+                                Button(role: .destructive) {
+                                    AuthService.shared.signOut()
+                                } label: {
+                                    Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                                }
+                            } label: {
+                                Image(systemName: "person.circle.fill")
+                                    .font(.system(size: 30))
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, UIDevice.current.userInterfaceIdiom == .pad ? -67 : -80)
+                }
+                #endif
+
 
                 // LIVE NOW banner
                 if let stream = liveStream, stream.isLive {
@@ -43,7 +100,7 @@ struct HomeView: View {
                                 Circle().fill(Color.white).frame(width: 18, height: 18)
                                 VStack(alignment: .leading, spacing: 4) {
                                     Text("LIVE NOW").font(.headline.bold()).foregroundColor(.white)
-                                    Text("Gospel Outreach of Olympia").font(.title2).foregroundColor(.white)
+                                    Text(stream.title).font(.title2).foregroundColor(.white)
                                 }
                             }
                             .padding(.horizontal, 40)
@@ -62,20 +119,24 @@ struct HomeView: View {
                     AutoplayToggleButton(enabled: $autoplay.enabled)
                     ShuffleToggleButton(enabled: $autoplay.shuffle)
                     Spacer()
+                    WatchTimerButton { showWatchTimer = true }
                 }
                 .padding(.horizontal, 40)
                 .focusSection()
                 #else
-                VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 12) {
                     Label("Recent Videos", systemImage: "play.rectangle.fill")
                         .font(.title3.bold())
                         .labelStyle(.titleAndIcon)
-                    HStack(spacing: 12) {
-                        AutoplayToggleButton(enabled: $autoplay.enabled)
-                        ShuffleToggleButton(enabled: $autoplay.shuffle)
+                    AutoplayToggleButton(enabled: $autoplay.enabled)
+                    ShuffleToggleButton(enabled: $autoplay.shuffle)
+                    Spacer()
+                    if UIDevice.current.userInterfaceIdiom == .pad {
+                        WatchTimerButton { showWatchTimer = true }
                     }
                 }
-                .padding(.horizontal, 20)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
                 #endif
 
                 if isLoading {
@@ -115,10 +176,15 @@ struct HomeView: View {
             .padding(.vertical, 20)
         }
         #if !os(tvOS)
-        .navigationTitle("Gospel Outreach")
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
-        .searchToolbar()
+        .toolbarBackground(.visible, for: .navigationBar)
+        // Only show toolbar items on iPhone (iPad has them inline with logo)
+        .modifier(iPhoneToolbarModifier(showLinkTV: $showLinkTV, showWatchTimer: $showWatchTimer))
+        .sheet(isPresented: $showLinkTV) { LinkTVView() }
+        .sheet(isPresented: $showSearch) { NavigationStack { SearchView() } }
         #endif
+        .sheet(isPresented: $showWatchTimer) { WatchTimerSetupView() }
         .appBackground()
         .task { await load() }
         .addToPlaylistPresentation(isPresented: $showAddToPlaylist, assetId: addToPlaylistAssetId)
@@ -133,3 +199,40 @@ struct HomeView: View {
         isLoading = false
     }
 }
+
+#if !os(tvOS)
+struct iPhoneToolbarModifier: ViewModifier {
+    @Binding var showLinkTV: Bool
+    @Binding var showWatchTimer: Bool
+
+    func body(content: Content) -> some View {
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            content
+        } else {
+            content
+                .searchToolbar()
+                .toolbar {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        Menu {
+                            Button { showLinkTV = true } label: {
+                                Label("Link Apple TV", systemImage: "appletv")
+                            }
+                            Button { showWatchTimer = true } label: {
+                                WatchTimerMenuLabel()
+                            }
+                            Divider()
+                            Button(role: .destructive) {
+                                AuthService.shared.signOut()
+                            } label: {
+                                Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                            }
+                        } label: {
+                            Image(systemName: "person.circle.fill")
+                                .font(.system(size: 22))
+                        }
+                    }
+                }
+        }
+    }
+}
+#endif
