@@ -59,8 +59,6 @@ struct PlaylistDetailView: View {
                                 }
                                 .buttonStyle(.borderedProminent)
 
-                                AutoplayToggleButton(enabled: $autoplay.enabled)
-                                ShuffleToggleButton(enabled: $autoplay.shuffle)
                             }
                             .padding(.horizontal, 40)
 

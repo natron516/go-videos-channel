@@ -2,15 +2,19 @@ import SwiftUI
 
 struct SermonLibraryView: View {
     @EnvironmentObject var api: MuxAPI
-    @ObservedObject private var autoplay = AutoplayManager.shared
     @State private var assets: [MuxAsset] = []
     @State private var isLoading = true
     @State private var addToPlaylistAssetId: String?
     @State private var showAddToPlaylist = false
+    #if !os(tvOS)
+    @State private var showLinkTV = false
+    @State private var showWatchTimer = false
+    @State private var showSearch = false
+    #endif
 
     var columns: [GridItem] {
         #if os(tvOS)
-        return Array(repeating: GridItem(.flexible(), spacing: 40), count: 4)
+        return Array(repeating: GridItem(.flexible(), spacing: 24), count: 4)
         #else
         return UIDevice.current.userInterfaceIdiom == .pad ? Array(repeating: GridItem(.flexible(), spacing: 20), count: 3) : Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
         #endif
@@ -37,29 +41,18 @@ struct SermonLibraryView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         #if os(tvOS)
-                        HStack(spacing: 24) {
-                            Label("Sermon Library", systemImage: "film.stack")
-                                .font(.title2.bold())
-                                .labelStyle(.titleAndIcon)
-                            AutoplayToggleButton(enabled: $autoplay.enabled)
-                            ShuffleToggleButton(enabled: $autoplay.shuffle)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 40)
-                        .padding(.top, 20)
-                        .padding(.bottom, 20)
-                        .focusSection()
+                        Label("Sermon Library", systemImage: "film.stack")
+                            .font(.title2.bold())
+                            .labelStyle(.titleAndIcon)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 20)
+                            .padding(.bottom, 20)
                         #else
-                        HStack(spacing: 12) {
-                            Label("Sermons", systemImage: "film.stack")
-                                .font(.title3.bold())
-                                .labelStyle(.titleAndIcon)
-                            AutoplayToggleButton(enabled: $autoplay.enabled)
-                            ShuffleToggleButton(enabled: $autoplay.shuffle)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
+                        Label("Sermons", systemImage: "film.stack")
+                            .font(.title3.bold())
+                            .labelStyle(.titleAndIcon)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
                         #endif
 
                         LazyVGrid(columns: columns, spacing: 16) {
@@ -84,7 +77,7 @@ struct SermonLibraryView: View {
                             }
                         }
                         #if os(tvOS)
-                        .padding(40)
+                        .padding(20)
                         #else
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
@@ -97,13 +90,20 @@ struct SermonLibraryView: View {
         .appBackground()
         .task { await load() }
         .addToPlaylistPresentation(isPresented: $showAddToPlaylist, assetId: addToPlaylistAssetId)
+        #if !os(tvOS)
+        .goNavBar(showLinkTV: $showLinkTV, showWatchTimer: $showWatchTimer, showSearch: $showSearch)
+        .sheet(isPresented: $showLinkTV) { LinkTVView() }
+        .sheet(isPresented: $showWatchTimer) { WatchTimerSetupView() }
+        .sheet(isPresented: $showSearch) { NavigationStack { SearchView() } }
+        #endif
     }
 
     func load() async {
-        isLoading = true
+        if assets.isEmpty { isLoading = true }
         do {
             let all = try await api.fetchAssets()
             assets = all.filter { $0.category == "sermon" || $0.category == nil }
+            prefetchThumbnails(assets.map(\.thumbnailURL))
         } catch { print("Error: \(error)") }
         isLoading = false
     }
@@ -116,20 +116,18 @@ struct SermonCardView: View {
     @Environment(\.isFocused) var isFocused
 
     var body: some View {
-        VStack(alignment: .center, spacing: 8) {
-            // Fixed 16:9 container — thumbnail always same size
+        VStack(alignment: .leading, spacing: 4) {
+            // Thumbnail
             Color.clear
                 .aspectRatio(16/9, contentMode: .fit)
                 .overlay(
-                    AsyncImage(url: asset.thumbnailURL) { image in
-                        image.resizable().scaledToFill()
-                    } placeholder: {
+                    CachedAsyncImage(url: asset.thumbnailURL) {
                         Rectangle()
                             .fill(Color.gray.opacity(0.3))
                             .overlay(Image(systemName: "play.circle").font(.largeTitle).foregroundColor(.white))
                     }
                 )
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay(alignment: .topTrailing) {
                     if asset.status == "preparing" {
                         Text("● LIVE")
@@ -139,36 +137,30 @@ struct SermonCardView: View {
                             .padding(.vertical, 3)
                             .background(Color.red)
                             .clipShape(Capsule())
-                            .padding(6)
+                            .padding(4)
                     }
                 }
 
             Text(asset.title)
-                .font(.subheadline.bold())
+                .font(.caption.bold())
                 .lineLimit(2)
-                .multilineTextAlignment(.center)
+                .multilineTextAlignment(.leading)
                 .foregroundColor(.primary)
-                .frame(minHeight: 40, alignment: .top)
 
-            if let speaker = asset.speaker {
-                Text(speaker).font(.caption).foregroundColor(.secondary).multilineTextAlignment(.center)
-            }
-
-            HStack(spacing: 6) {
+            HStack(spacing: 4) {
                 if let date = asset.formattedDate {
-                    Text(date).font(.caption).foregroundColor(.secondary)
-                }
-                if asset.formattedDate != nil, asset.duration != nil {
-                    Text("·").font(.caption).foregroundColor(.secondary)
+                    Text(date).font(.caption2).foregroundColor(.secondary)
                 }
                 if let duration = asset.duration {
-                    Text(formatDuration(duration)).font(.caption).foregroundColor(.secondary)
+                    Text("· \(formatDuration(duration))").font(.caption2).foregroundColor(.secondary)
                 }
             }
-
-            Spacer(minLength: 0)
         }
+        #if os(tvOS)
         .padding(10)
+        #else
+        .padding(6)
+        #endif
         #if os(tvOS)
         .overlay(
             RoundedRectangle(cornerRadius: 14)

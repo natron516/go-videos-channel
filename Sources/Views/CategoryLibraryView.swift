@@ -6,15 +6,19 @@ struct CategoryLibraryView: View {
     let icon: String
 
     @EnvironmentObject var api: MuxAPI
-    @ObservedObject private var autoplay = AutoplayManager.shared
     @State private var assets: [MuxAsset] = []
     @State private var isLoading = true
     @State private var addToPlaylistAssetId: String?
     @State private var showAddToPlaylist = false
+    #if !os(tvOS)
+    @State private var showLinkTV = false
+    @State private var showWatchTimer = false
+    @State private var showSearch = false
+    #endif
 
     var columns: [GridItem] {
         #if os(tvOS)
-        return Array(repeating: GridItem(.flexible(), spacing: 40), count: 4)
+        return Array(repeating: GridItem(.flexible(), spacing: 24), count: 4)
         #else
         return UIDevice.current.userInterfaceIdiom == .pad ? Array(repeating: GridItem(.flexible(), spacing: 20), count: 3) : Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
         #endif
@@ -42,29 +46,18 @@ struct CategoryLibraryView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 0) {
                         #if os(tvOS)
-                        HStack(spacing: 24) {
-                            Label(title, systemImage: icon)
-                                .font(.title2.bold())
-                                .labelStyle(.titleAndIcon)
-                            AutoplayToggleButton(enabled: $autoplay.enabled)
-                            ShuffleToggleButton(enabled: $autoplay.shuffle)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 40)
-                        .padding(.top, 20)
-                        .padding(.bottom, 20)
-                        .focusSection()
+                        Label(title, systemImage: icon)
+                            .font(.title2.bold())
+                            .labelStyle(.titleAndIcon)
+                            .padding(.horizontal, 20)
+                            .padding(.top, 20)
+                            .padding(.bottom, 20)
                         #else
-                        HStack(spacing: 12) {
-                            Label(title, systemImage: icon)
-                                .font(.title3.bold())
-                                .labelStyle(.titleAndIcon)
-                            AutoplayToggleButton(enabled: $autoplay.enabled)
-                            ShuffleToggleButton(enabled: $autoplay.shuffle)
-                            Spacer()
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
+                        Label(title, systemImage: icon)
+                            .font(.title3.bold())
+                            .labelStyle(.titleAndIcon)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 10)
                         #endif
 
                         LazyVGrid(columns: columns, spacing: 16) {
@@ -89,7 +82,7 @@ struct CategoryLibraryView: View {
                             }
                         }
                         #if os(tvOS)
-                        .padding(40)
+                        .padding(20)
                         #else
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
@@ -102,13 +95,20 @@ struct CategoryLibraryView: View {
         .appBackground()
         .task { await load() }
         .addToPlaylistPresentation(isPresented: $showAddToPlaylist, assetId: addToPlaylistAssetId)
+        #if !os(tvOS)
+        .goNavBar(showLinkTV: $showLinkTV, showWatchTimer: $showWatchTimer, showSearch: $showSearch)
+        .sheet(isPresented: $showLinkTV) { LinkTVView() }
+        .sheet(isPresented: $showWatchTimer) { WatchTimerSetupView() }
+        .sheet(isPresented: $showSearch) { NavigationStack { SearchView() } }
+        #endif
     }
 
     func load() async {
-        isLoading = true
+        if assets.isEmpty { isLoading = true }
         do {
             let all = try await api.fetchAssets()
             assets = all.filter { $0.category == category }
+            prefetchThumbnails(assets.map(\.thumbnailURL))
         } catch { print("Error: \(error)") }
         isLoading = false
     }

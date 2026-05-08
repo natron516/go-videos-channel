@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 // MARK: - Asset (VOD)
 
@@ -28,7 +29,12 @@ struct MuxAsset: Identifiable, Decodable {
 
     var thumbnailURL: URL? {
         guard let pid = playbackId else { return nil }
-        return URL(string: "https://image.mux.com/\(pid)/thumbnail.jpg?width=640&time=10")
+        #if os(tvOS)
+        let w = 480
+        #else
+        let w = UIDevice.current.userInterfaceIdiom == .pad ? 400 : 320
+        #endif
+        return URL(string: "https://image.mux.com/\(pid)/thumbnail.jpg?width=\(w)&time=10")
     }
 
     // Supports plain text passthrough ("sermon", "sermon", "children", etc.) OR JSON

@@ -13,13 +13,17 @@ class AppleMusicService: ObservableObject {
     @Published var isLoading = false
     @Published var nowPlayingTitle: String?
     @Published var isPlaying = false
+    @Published var playbackError: String?
 
-    private let player = ApplicationMusicPlayer.shared
+    private var player: ApplicationMusicPlayer { ApplicationMusicPlayer.shared }
 
     init() {
         authStatus = MusicAuthorization.currentStatus
         isAuthorized = authStatus == .authorized
-        observePlayback()
+        // Only start playback observation if already authorized
+        if authStatus == .authorized {
+            observePlayback()
+        }
     }
 
     // MARK: - Authorization
@@ -28,6 +32,9 @@ class AppleMusicService: ObservableObject {
         let status = await MusicAuthorization.request()
         authStatus = status
         isAuthorized = status == .authorized
+        if status == .authorized {
+            observePlayback()
+        }
     }
 
     // MARK: - Search
@@ -85,11 +92,14 @@ class AppleMusicService: ObservableObject {
     // MARK: - Playback
 
     func playAlbum(_ album: Album) async {
+        playbackError = nil
         do {
             let detailed = try await album.with([.tracks])
             player.queue = [detailed]
+            try await player.prepareToPlay()
             try await player.play()
         } catch {
+            playbackError = error.localizedDescription
             print("Playback error: \(error)")
         }
     }
@@ -137,17 +147,17 @@ class AppleMusicService: ObservableObject {
     // MARK: - Observe Playback State
 
     private func observePlayback() {
-        // Poll playback state
-        Task {
-            while true {
-                let state = player.state
-                isPlaying = state.playbackStatus == .playing
-                if let entry = player.queue.currentEntry {
-                    nowPlayingTitle = entry.title
-                } else {
-                    nowPlayingTitle = nil
+        Task { [weak self] in
+            while !Task.isCancelled {
+                guard let self else { return }
+                do {
+                    let state = self.player.state
+                    self.isPlaying = state.playbackStatus == .playing
+                    self.nowPlayingTitle = self.player.queue.currentEntry?.title
+                    try await Task.sleep(nanoseconds: 1_000_000_000) // 1s poll
+                } catch {
+                    break // Task cancelled
                 }
-                try? await Task.sleep(nanoseconds: 500_000_000)
             }
         }
     }

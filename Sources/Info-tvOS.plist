@@ -47,5 +47,7 @@
     </dict>
     <key>UILaunchScreen</key>
     <dict/>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>GO Media uses Apple Music to stream worship albums and playlists.</string>
 </dict>
 </plist>

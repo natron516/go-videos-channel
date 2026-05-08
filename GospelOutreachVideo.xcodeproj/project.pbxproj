@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		044FFC5F9B93B0EBE3A9D495 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 1616E3C0C3F1B6C58EA2E6F8 /* FirebaseCore */; };
 		05FAF3AAA549D58EFE6EBC5F /* MuxAssetURLTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B67BC39A37CEB8494AC55EC /* MuxAssetURLTracker.swift */; };
+		0747A3F4CDE3D84F8F768D6D /* CachedAsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AC99C87C7358E44EBC918F7 /* CachedAsyncImage.swift */; };
 		0AD1F60294B31719E317444E /* SermonLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD92E99B40CCBA8DC03A528 /* SermonLibraryView.swift */; };
 		0C7298C66148AE5696764530 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 66C02F962520C695D3B6AD13 /* Assets.xcassets */; };
 		12DF277ED23ED1CEC93E03C2 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 72BA9A315F8E4750E796317C /* GoogleSignInSwift */; };
@@ -72,6 +73,7 @@
 		BB74356160C6046FF3E05032 /* MuxAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646E57631B8B719E54844D3F /* MuxAPI.swift */; };
 		BBC897417C90F1383FEFEAE8 /* VideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48E7B9F8772B82F3F354D570 /* VideoPlayerView.swift */; };
 		C5A0BBF4227FA9C938ED416E /* WatchTimerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62057527ABAE28173080BB26 /* WatchTimerManager.swift */; };
+		C692B79778E5BD2AD49854BB /* CachedAsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AC99C87C7358E44EBC918F7 /* CachedAsyncImage.swift */; };
 		CA74D97C966DD2A9E99514E7 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D6139901B3F964C119566D4 /* AboutView.swift */; };
 		CB5A8B050FCAD13F8B155DDB /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EB98D4E713668484DE5C7A0 /* HomeView.swift */; };
 		D16AC6ED72902428AA035328 /* TVLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 405FD0F618D0C129F32D7305 /* TVLoginView.swift */; };
@@ -118,6 +120,7 @@
 		66C02F962520C695D3B6AD13 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		670782E11CBDCC9BFCA18086 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		685CB064472934E29B70E6AE /* PinLockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinLockView.swift; sourceTree = "<group>"; };
+		6AC99C87C7358E44EBC918F7 /* CachedAsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAsyncImage.swift; sourceTree = "<group>"; };
 		6BB42A7C8E837D2D8F177E92 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		6CA6C9033A9513A86B6F38F2 /* KidsLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KidsLibraryView.swift; sourceTree = "<group>"; };
 		867C773603C1C6A5BD73A6A0 /* GospelOutreachTVApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GospelOutreachTVApp.swift; sourceTree = "<group>"; };
@@ -252,6 +255,7 @@
 				BF40A96E6DED709473D20C93 /* AlbumDetailView.swift */,
 				638AD0CB70F669C5AC4BB161 /* AppleMusicView.swift */,
 				453989F1DC1AAE3C937D73D8 /* BrowseView.swift */,
+				6AC99C87C7358E44EBC918F7 /* CachedAsyncImage.swift */,
 				4F212082C23E65755391A35E /* CategoryLibraryView.swift */,
 				6BB42A7C8E837D2D8F177E92 /* ContentView.swift */,
 				1EB98D4E713668484DE5C7A0 /* HomeView.swift */,
@@ -405,6 +409,7 @@
 				6D0849175356ECC2B9DFA619 /* AuthService.swift in Sources */,
 				E5634F1468F1CA47BB23010F /* AutoplayManager.swift in Sources */,
 				7237D42BB0F9E8DF754487DD /* BrowseView.swift in Sources */,
+				0747A3F4CDE3D84F8F768D6D /* CachedAsyncImage.swift in Sources */,
 				A4CAB4FD63B4E28C6F19D3BA /* CategoryLibraryView.swift in Sources */,
 				76FF919D5B0752221F11D7EB /* ContentView.swift in Sources */,
 				7C30BAB0AADEA6EA0677E3A8 /* GospelOutreachTVApp.swift in Sources */,
@@ -445,6 +450,7 @@
 				186B314C7E51D486202EB1A4 /* AuthService.swift in Sources */,
 				831FC8449C0C26DDBB61C0DF /* AutoplayManager.swift in Sources */,
 				DF7CB206541F1AD967E989AA /* BrowseView.swift in Sources */,
+				C692B79778E5BD2AD49854BB /* CachedAsyncImage.swift in Sources */,
 				83ECE79C7559D1908BC66E68 /* CategoryLibraryView.swift in Sources */,
 				F175EC4FF1E90CA2AD1DE46D /* ContentView.swift in Sources */,
 				7D408BE1AA52D3922A2B9116 /* GospelOutreachTVApp.swift in Sources */,
@@ -483,7 +489,7 @@
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_ENTITLEMENTS = "Sources/GospelOutreach-tvOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 31;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Sources/Info-tvOS.plist";
@@ -571,7 +577,7 @@
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_ENTITLEMENTS = "Sources/GospelOutreach-tvOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 31;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Sources/Info-tvOS.plist";
@@ -595,7 +601,7 @@
 				CODE_SIGN_ENTITLEMENTS = Sources/GospelOutreach.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 31;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Sources/Info.plist;
@@ -679,7 +685,7 @@
 				CODE_SIGN_ENTITLEMENTS = Sources/GospelOutreach.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 29;
+				CURRENT_PROJECT_VERSION = 31;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Sources/Info.plist;

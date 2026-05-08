@@ -56,6 +56,8 @@ struct AutoplayToggleButton: View {
                 Text("AutoRun")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .fixedSize()
             }
         }
         .buttonStyle(CapsuleFocusButtonStyle())
@@ -76,6 +78,8 @@ struct ShuffleToggleButton: View {
                 Text("Shuffle")
                     .font(.caption)
                     .foregroundColor(.secondary)
+                    .lineLimit(1)
+                    .fixedSize()
             }
         }
         .buttonStyle(CapsuleFocusButtonStyle())
@@ -153,6 +157,135 @@ private struct SearchToolbarModifier: ViewModifier {
             .sheet(isPresented: $showSearch) {
                 NavigationStack { SearchView() }
             }
+    }
+}
+#endif
+
+#if !os(tvOS)
+/// Applies the consistent GO Videos nav bar: logo left, 5 icons right.
+/// Each view owns its own @State for the sheets it presents.
+struct GONavBarModifier: ViewModifier {
+    @Binding var showLinkTV: Bool
+    @Binding var showWatchTimer: Bool
+    @Binding var showSearch: Bool
+    @ObservedObject var autoplay: AutoplayManager
+
+    func body(content: Content) -> some View {
+        content
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(.hidden, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    if let uiImage = UIImage(named: "NavLogo") {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .interpolation(.high)
+                            .scaledToFit()
+                            .frame(height: UIDevice.current.userInterfaceIdiom == .pad ? 48 : 38)
+                            .allowsHitTesting(false)
+                            .buttonStyle(.plain)
+                    }
+                }
+                ToolbarItemGroup(placement: .navigationBarTrailing) {
+                    Button { autoplay.enabled.toggle() } label: {
+                        Image(systemName: autoplay.enabled ? "forward.end.fill" : "forward.end")
+                            .foregroundColor(autoplay.enabled ? .blue : .secondary)
+                    }
+                    Button { autoplay.shuffle.toggle() } label: {
+                        Image(systemName: "shuffle")
+                            .foregroundColor(autoplay.shuffle ? .green : .secondary)
+                    }
+                    WatchTimerToolbarButton { showWatchTimer = true }
+                    Button { showSearch = true } label: {
+                        Image(systemName: "magnifyingglass")
+                    }
+                    Menu {
+                        Button { showLinkTV = true } label: {
+                            Label("Link Apple TV", systemImage: "appletv")
+                        }
+                        Divider()
+                        Button(role: .destructive) {
+                            AuthService.shared.signOut()
+                        } label: {
+                            Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
+                        }
+                    } label: {
+                        Image(systemName: "person.circle.fill")
+                    }
+                }
+            }
+    }
+}
+
+struct WatchTimerToolbarButton: View {
+    let action: () -> Void
+    @ObservedObject private var watchTimer = WatchTimerManager.shared
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "timer")
+                .foregroundColor(watchTimer.isRunning ? .orange : .secondary)
+        }
+    }
+}
+
+extension View {
+    func goNavBar(
+        showLinkTV: Binding<Bool>,
+        showWatchTimer: Binding<Bool>,
+        showSearch: Binding<Bool>,
+        autoplay: AutoplayManager = .shared
+    ) -> some View {
+        self.modifier(GONavBarModifier(
+            showLinkTV: showLinkTV,
+            showWatchTimer: showWatchTimer,
+            showSearch: showSearch,
+            autoplay: autoplay
+        ))
+    }
+}
+#endif
+
+#if os(tvOS)
+/// tvOS toolbar: autoplay, shuffle, timer toggles in the top-right of the detail view.
+struct TVToolbarModifier: ViewModifier {
+    @ObservedObject var autoplay: AutoplayManager
+    @Binding var showWatchTimer: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .toolbar {
+                ToolbarItemGroup(placement: .automatic) {
+                    // Autoplay
+                    Button { autoplay.enabled.toggle() } label: {
+                        Image(systemName: autoplay.enabled ? "forward.end.fill" : "forward.end")
+                            .foregroundColor(autoplay.enabled ? .blue : .primary)
+                    }
+                    // Shuffle
+                    Button { autoplay.shuffle.toggle() } label: {
+                        Image(systemName: "shuffle")
+                            .foregroundColor(autoplay.shuffle ? .green : .primary)
+                    }
+                    // Watch Timer
+                    TVWatchTimerButton { showWatchTimer = true }
+                }
+            }
+    }
+}
+
+struct TVWatchTimerButton: View {
+    let action: () -> Void
+    @ObservedObject private var watchTimer = WatchTimerManager.shared
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: "timer")
+                .foregroundColor(watchTimer.isRunning ? .orange : .primary)
+        }
+    }
+}
+
+extension View {
+    func tvToolbar(showWatchTimer: Binding<Bool>, autoplay: AutoplayManager = .shared) -> some View {
+        self.modifier(TVToolbarModifier(autoplay: autoplay, showWatchTimer: showWatchTimer))
     }
 }
 #endif

@@ -1,6 +1,27 @@
 import SwiftUI
 import MusicKit
 
+#if os(tvOS)
+// White-outline focus style for album cards — no oversized highlight
+struct TVPlainAlbumButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+    }
+}
+#endif
+
+extension MusicAuthorization.Status {
+    var description: String {
+        switch self {
+        case .authorized:      return "Authorized ✓"
+        case .denied:          return "Denied — check Settings"
+        case .notDetermined:   return "Not yet requested"
+        case .restricted:      return "Restricted"
+        @unknown default:      return "Unknown"
+        }
+    }
+}
+
 // Add album IDs here to curate the music section
 // Find IDs: search Apple Music in browser, the ID is the number in the URL
 // e.g. https://music.apple.com/us/album/amazing-grace/123456789 → "123456789"
@@ -44,6 +65,9 @@ struct AppleMusicView: View {
     @StateObject private var music = AppleMusicService.shared
     @State private var albums: [Album] = []
     @State private var isLoading = true
+    @State private var loadError: String? = nil
+    @State private var showAsList = false
+    @State private var activeLoadTask: Task<Void, Never>? = nil
 
     var body: some View {
         ZStack {
@@ -52,8 +76,35 @@ struct AppleMusicView: View {
             if !music.isAuthorized {
                 authPromptView
             } else if isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                VStack(spacing: 20) {
+                    ProgressView()
+                        .scaleEffect(1.5)
+                    Text("Loading music...")
+                        .font(.headline)
+                        .foregroundColor(.secondary)
+                    Button("Cancel") {
+                        activeLoadTask?.cancel()
+                        activeLoadTask = nil
+                        isLoading = false
+                        loadError = "Cancelled — tap Retry to try again."
+                    }
+                    .padding(.top, 12)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if let err = loadError {
+                VStack(spacing: 16) {
+                    Image(systemName: "exclamationmark.triangle")
+                        .font(.largeTitle)
+                        .foregroundColor(.orange)
+                    Text(err)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                    Button("Retry") {
+                        loadError = nil
+                        activeLoadTask = Task { await loadCurated() }
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else if albums.isEmpty {
                 emptyView
             } else {
@@ -69,7 +120,8 @@ struct AppleMusicView: View {
                 await music.requestAuthorization()
             }
             if music.isAuthorized {
-                await loadCurated()
+                activeLoadTask = Task { await loadCurated() }
+                await activeLoadTask?.value
             }
         }
     }
@@ -96,36 +148,50 @@ struct AppleMusicView: View {
                 .foregroundColor(.white.opacity(0.6))
                 .multilineTextAlignment(.center)
 
+            // Status label
+            Text("Status: \(music.authStatus.description)")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
             if music.authStatus == .denied {
-                Text("Apple Music access was denied.\nGo to Settings → GO Media → Allow Apple Music")
+                #if os(tvOS)
+                Text("Access was denied. Go to\nSettings → Apps → GO Media → Apple Music")
+                    .font(.callout)
+                    .foregroundColor(.orange)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                #else
+                Text("Go to Settings → GO Media → Allow Apple Music")
                     .font(.caption)
                     .foregroundColor(.orange)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
-            } else {
-                Button {
-                    Task {
-                        await music.requestAuthorization()
-                        if music.isAuthorized {
-                            await loadCurated()
-                        }
-                    }
-                } label: {
-                    HStack {
-                        Image(systemName: "music.note")
-                        Text("Connect Apple Music")
-                    }
-                    .font(.headline)
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(
-                        LinearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing)
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 14))
-                }
-                .padding(.horizontal, 40)
+                #endif
             }
+
+            // Always show connect button so user can retry
+            Button {
+                Task {
+                    await music.requestAuthorization()
+                    if music.isAuthorized {
+                        await loadCurated()
+                    }
+                }
+            } label: {
+                HStack {
+                    Image(systemName: "music.note")
+                    Text(music.authStatus == .denied ? "Try Again" : "Connect Apple Music")
+                }
+                .font(.headline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(
+                    LinearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing)
+                )
+                .clipShape(RoundedRectangle(cornerRadius: 14))
+            }
+            .padding(.horizontal, 40)
         }
     }
 
@@ -161,25 +227,52 @@ struct AppleMusicView: View {
 
                 // Albums section
                 if !albums.isEmpty {
-                    sectionHeader("Albums")
-
-                    #if os(tvOS)
-                    let columns = Array(repeating: GridItem(.flexible(), spacing: 40), count: 4)
-                    #else
-                    let columns = UIDevice.current.userInterfaceIdiom == .pad
-                        ? Array(repeating: GridItem(.flexible(), spacing: 16), count: 4)
-                        : Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
-                    #endif
-
-                    LazyVGrid(columns: columns, spacing: 16) {
-                        ForEach(albums) { album in
-                            NavigationLink(destination: AlbumDetailView(album: album)) {
-                                AlbumCardView(album: album)
-                            }
-                            .buttonStyle(.plain)
+                    HStack {
+                        sectionHeader("Albums")
+                        Spacer()
+                        Button {
+                            showAsList.toggle()
+                        } label: {
+                            Image(systemName: showAsList ? "square.grid.2x2" : "list.bullet")
+                                .font(.title3)
+                                .foregroundColor(.secondary)
                         }
+                        .padding(.trailing, 16)
                     }
-                    .padding(.horizontal, 16)
+
+                    if showAsList {
+                        // List view
+                        VStack(spacing: 8) {
+                            ForEach(albums) { album in
+                                NavigationLink(destination: AlbumDetailView(album: album)) {
+                                    AlbumListRow(album: album)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    } else {
+                        // Grid view
+                        #if os(tvOS)
+                        let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: 5)
+                        #else
+                        let columns = UIDevice.current.userInterfaceIdiom == .pad
+                            ? Array(repeating: GridItem(.flexible(), spacing: 16), count: 4)
+                            : Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+                        #endif
+
+                        LazyVGrid(columns: columns, spacing: 12) {
+                            ForEach(albums) { album in
+                                NavigationLink(destination: AlbumDetailView(album: album)) {
+                                    AlbumCardView(album: album)
+                                }
+                                #if os(tvOS)
+                                .buttonStyle(TVPlainAlbumButtonStyle())
+                                #endif
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    }
                 }
 
 
@@ -199,23 +292,47 @@ struct AppleMusicView: View {
 
     func loadCurated() async {
         isLoading = true
+        loadError = nil
+        albums = []
         defer { isLoading = false }
 
-        // Load albums
-        for id in CuratedMusic.albumIDs {
-            do {
-                let request = MusicCatalogResourceRequest<Album>(matching: \.id, equalTo: MusicItemID(id))
-                let response = try await request.response()
-                if let album = response.items.first {
-                    albums.append(album)
+        // 20-second timeout — if catalog requests hang, bail out gracefully
+        let loadTask = Task {
+            await withTaskGroup(of: Album?.self) { group in
+                for id in CuratedMusic.albumIDs {
+                    group.addTask {
+                        guard !Task.isCancelled else { return nil }
+                        do {
+                            let request = MusicCatalogResourceRequest<Album>(matching: \.id, equalTo: MusicItemID(id))
+                            let response = try await request.response()
+                            return response.items.first
+                        } catch {
+                            return nil
+                        }
+                    }
                 }
-            } catch {
-                print("Failed to load album \(id): \(error)")
+                var result: [Album] = []
+                for await album in group {
+                    if let album { result.append(album) }
+                }
+                return result
             }
         }
 
-        // Sort alphabetically
-        albums.sort { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        let timeoutTask = Task {
+            try? await Task.sleep(nanoseconds: 20_000_000_000)
+            loadTask.cancel()
+        }
+
+        let loaded = await loadTask.value
+        timeoutTask.cancel()
+
+        if loadTask.isCancelled {
+            loadError = "Timed out loading music. Check your Apple Music subscription and internet connection."
+            return
+        }
+
+        albums = loaded.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
     }
 }
 
@@ -223,11 +340,12 @@ struct AppleMusicView: View {
 
 struct AlbumCardView: View {
     let album: Album
+    @Environment(\.isFocused) var isFocused
 
     var body: some View {
         VStack(alignment: .center, spacing: 8) {
             if let artwork = album.artwork {
-                ArtworkImage(artwork, width: 200)
+                ArtworkImage(artwork, width: 150)
                     .aspectRatio(1, contentMode: .fit)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
             } else {
@@ -242,27 +360,78 @@ struct AlbumCardView: View {
             }
 
             Text(album.title)
-                .font(.subheadline.bold())
+                .font(.caption.bold())
                 .lineLimit(2)
                 .multilineTextAlignment(.center)
                 .foregroundColor(.white)
-                .frame(minHeight: 40, alignment: .top)
+                .frame(minHeight: 34, alignment: .top)
 
             if !album.artistName.isEmpty {
                 Text(album.artistName)
-                    .font(.caption)
+                    .font(.caption2)
                     .foregroundColor(.secondary)
                     .lineLimit(1)
             }
         }
-        .padding(10)
+        .padding(8)
         .background(
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: 12)
                 .fill(Color.white.opacity(0.08))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isFocused ? Color.white : Color.white.opacity(0.1),
+                        lineWidth: isFocused ? 3 : 1)
+        )
+        .scaleEffect(isFocused ? 1.04 : 1.0)
+        .animation(.easeInOut(duration: 0.12), value: isFocused)
+    }
+}
+
+// MARK: - Album List Row (for list view)
+
+struct AlbumListRow: View {
+    let album: Album
+
+    var body: some View {
+        HStack(spacing: 12) {
+            if let artwork = album.artwork {
+                ArtworkImage(artwork, width: 56)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 56, height: 56)
+                    .overlay(
+                        Image(systemName: "music.note")
+                            .foregroundColor(.white.opacity(0.4))
+                    )
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(album.title)
+                    .font(.body.bold())
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                if !album.artistName.isEmpty {
+                    Text(album.artistName)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .foregroundColor(.white.opacity(0.3))
+                .font(.caption)
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.white.opacity(0.05))
         )
     }
 }
