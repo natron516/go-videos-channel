@@ -27,7 +27,24 @@ struct MuxAsset: Identifiable, Decodable {
         return URL(string: "https://stream.mux.com/\(pid).m3u8")
     }
 
+    /// govideos:// deep link — opens directly in the GO Media app
+    var shareURL: URL? {
+        guard let stream = streamURL else { return nil }
+        var comps = URLComponents()
+        comps.scheme = "govideos"
+        comps.host   = "play"
+        comps.queryItems = [
+            URLQueryItem(name: "url",   value: stream.absoluteString),
+            URLQueryItem(name: "title", value: title),
+        ]
+        return comps.url ?? stream
+    }
+
     var thumbnailURL: URL? {
+        // Use custom thumbnail from passthrough JSON if set
+        if let custom = passthroughJSON?["thumbnail"], let url = URL(string: custom) {
+            return url
+        }
         guard let pid = playbackId else { return nil }
         #if os(tvOS)
         let w = 480
@@ -35,6 +52,34 @@ struct MuxAsset: Identifiable, Decodable {
         let w = UIDevice.current.userInterfaceIdiom == .pad ? 400 : 320
         #endif
         return URL(string: "https://image.mux.com/\(pid)/thumbnail.jpg?width=\(w)&time=10")
+    }
+
+    /// For featured cards: rotates to a different video frame every 4 hours.
+    /// Falls back to custom thumbnail if one is set (never rotates those).
+    var featuredThumbnailURL: URL? {
+        // Custom thumbnail always wins — no rotation
+        if let custom = passthroughJSON?["thumbnail"], let url = URL(string: custom) {
+            return url
+        }
+        guard let pid = playbackId, let duration = duration, duration > 60 else {
+            return thumbnailURL
+        }
+        #if os(tvOS)
+        let w = 480
+        #else
+        let w = UIDevice.current.userInterfaceIdiom == .pad ? 400 : 320
+        #endif
+        // 1-hour bucket: changes every hour on the hour
+        let bucket = Int(Date().timeIntervalSince1970 / 3600)
+        // Stable per-asset hash (not session-randomised like hashValue)
+        let stableHash = id.unicodeScalars.reduce(0) { ($0 &* 31) &+ Int($1.value) }
+        let seed = abs(stableHash &+ bucket)
+        // Pick a frame from the middle 80% of the video (skip intro/credits)
+        let start = duration * 0.05
+        let end   = duration * 0.85
+        let range = max(Int(end - start), 1)
+        let t     = Int(start) + (seed % range)
+        return URL(string: "https://image.mux.com/\(pid)/thumbnail.jpg?width=\(w)&fit_mode=preserve&time=\(t)")
     }
 
     // Supports plain text passthrough ("sermon", "sermon", "children", etc.) OR JSON
@@ -84,6 +129,22 @@ struct MuxAssetsResponse: Decodable {
     let data: [MuxAsset]
 }
 
+extension MuxAsset {
+    /// Minimal stub built from a playback ID + optional title — used for deep-link playback.
+    static func stub(playbackId: String, title: String?) -> MuxAsset? {
+        // Encode a minimal JSON blob so Decodable initialiser works
+        let json: [String: Any] = [
+            "id": playbackId,
+            "status": "ready",
+            "playback_ids": [["id": playbackId, "policy": "public"]],
+            "meta": ["title": title ?? "Video"],
+        ]
+        guard let data = try? JSONSerialization.data(withJSONObject: json),
+              let asset = try? JSONDecoder().decode(MuxAsset.self, from: data) else { return nil }
+        return asset
+    }
+}
+
 // MARK: - Live Stream
 
 struct MuxLiveStream: Identifiable, Decodable {
@@ -93,11 +154,29 @@ struct MuxLiveStream: Identifiable, Decodable {
     let streamKey: String?
     let meta: MuxAssetMeta?
     let passthrough: String?
+    let recentAssetIds: [String]?   // asset IDs from recent sessions (includes past)
+    let activeAssetId: String?       // ID of the asset being recorded RIGHT NOW
 
     enum CodingKeys: String, CodingKey {
         case id, status, meta, passthrough
         case playbackIds = "playback_ids"
         case streamKey = "stream_key"
+        case recentAssetIds = "recent_asset_ids"
+        case activeAssetId = "active_asset_id"
+    }
+
+    /// Parsed passthrough JSON dictionary (same approach as MuxAsset).
+    private var passthroughJSON: [String: String]? {
+        guard let data = passthrough?.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode([String: String].self, from: data)
+    }
+
+    /// The Mux category for this live stream, parsed from passthrough JSON.
+    var category: String? {
+        if let cat = passthroughJSON?["category"] { return cat.lowercased() }
+        guard let raw = passthrough?.trimmingCharacters(in: .whitespacesAndNewlines).lowercased(),
+              !raw.isEmpty, !raw.hasPrefix("{") else { return nil }
+        return raw
     }
 
     var isSermon: Bool {

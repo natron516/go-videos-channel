@@ -13,9 +13,19 @@ final class ActivePlayerSession {
     private weak var player: AVPlayer?
     private var observer: Any?
 
-    func set(player: AVPlayer, observer: Any) {
-        self.player   = player
-        self.observer = observer
+    private(set) var currentURL: URL?
+    private(set) var currentTitle: String?
+
+    func set(player: AVPlayer, observer: Any, url: URL? = nil, title: String? = nil) {
+        self.player       = player
+        self.observer     = observer
+        self.currentURL   = url
+        self.currentTitle = title
+    }
+
+    var currentTime: Double? {
+        guard let t = player?.currentTime().seconds, !t.isNaN else { return nil }
+        return t
     }
 
     /// Save current position and remove the periodic observer.
@@ -26,8 +36,8 @@ final class ActivePlayerSession {
         guard let url  = (item.asset as? AVURLAsset)?.url,
               let assetId = MuxAssetURLTracker.assetId(for: url) else { return }
         let pos = player.currentTime().seconds
-        let dur = item.duration.seconds.isNaN || item.duration.seconds.isInfinite
-            ? nil : item.duration.seconds
+        let rawDur = item.duration.seconds
+        let dur = (rawDur.isNaN || rawDur.isInfinite) ? nil : rawDur
         PlaybackProgress.shared.save(assetId: assetId, position: pos, duration: dur)
     }
 }

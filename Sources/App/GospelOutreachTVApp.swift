@@ -8,9 +8,11 @@ struct GospelOutreachTVApp: App {
 
     init() {
         FirebaseApp.configure()
+        SessionTracker.shared.start()
         #if os(iOS)
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
         try? AVAudioSession.sharedInstance().setActive(true)
+        CastManager.shared.setup()
         #endif
     }
 
@@ -20,6 +22,9 @@ struct GospelOutreachTVApp: App {
                 .environmentObject(MuxAPI.shared)
                 .environmentObject(auth)
                 .preferredColorScheme(.dark)
+                .onOpenURL { url in
+                    DeepLinkHandler.shared.handle(url)
+                }
         }
     }
 }

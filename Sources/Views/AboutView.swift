@@ -2,6 +2,9 @@ import SwiftUI
 
 struct AboutView: View {
     @State private var showLinkTV = false
+    @State private var showDeleteConfirm = false
+    @State private var showDeleteError = false
+    @State private var showFeedback = false
 
     var body: some View {
         VStack(spacing: 32) {
@@ -27,6 +30,16 @@ struct AboutView: View {
 
             Divider()
 
+            Button {
+                showFeedback = true
+            } label: {
+                Label("Send App Feedback", systemImage: "lightbulb")
+            }
+            .buttonStyle(.bordered)
+            .sheet(isPresented: $showFeedback) { FeedbackView() }
+
+            Divider()
+
             #if os(iOS)
             Button {
                 showLinkTV = true
@@ -46,8 +59,34 @@ struct AboutView: View {
                     .foregroundColor(.red)
             }
             .buttonStyle(.bordered)
+
+            Button(role: .destructive) {
+                showDeleteConfirm = true
+            } label: {
+                Label("Delete Account", systemImage: "trash")
+                    .foregroundColor(.red)
+            }
+            .buttonStyle(.bordered)
         }
         .padding(60)
         .navigationTitle("About")
+        .alert("Delete Account", isPresented: $showDeleteConfirm) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                Task {
+                    await AuthService.shared.deleteAccount()
+                    if AuthService.shared.deleteError != nil {
+                        showDeleteError = true
+                    }
+                }
+            }
+        } message: {
+            Text("Are you sure? This will permanently delete your account and all associated data. This action cannot be undone.")
+        }
+        .alert("Error", isPresented: $showDeleteError) {
+            Button("OK") { AuthService.shared.deleteError = nil }
+        } message: {
+            Text(AuthService.shared.deleteError ?? "Unknown error")
+        }
     }
 }

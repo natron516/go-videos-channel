@@ -169,6 +169,10 @@ struct GONavBarModifier: ViewModifier {
     @Binding var showWatchTimer: Bool
     @Binding var showSearch: Bool
     @ObservedObject var autoplay: AutoplayManager
+    @State private var showDeleteConfirm = false
+    @State private var showDeleteError = false
+    @State private var showFeedback = false
+    @ObservedObject private var auth = AuthService.shared
 
     func body(content: Content) -> some View {
         content
@@ -177,13 +181,14 @@ struct GONavBarModifier: ViewModifier {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     if let uiImage = UIImage(named: "NavLogo") {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .interpolation(.high)
-                            .scaledToFit()
-                            .frame(height: UIDevice.current.userInterfaceIdiom == .pad ? 48 : 38)
-                            .allowsHitTesting(false)
-                            .buttonStyle(.plain)
+                        Link(destination: URL(string: "https://go-admin-production-6be4.up.railway.app/")!) {
+                            Image(uiImage: uiImage)
+                                .resizable()
+                                .interpolation(.high)
+                                .scaledToFit()
+                                .frame(height: UIDevice.current.userInterfaceIdiom == .pad ? 48 : 38)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
@@ -203,17 +208,44 @@ struct GONavBarModifier: ViewModifier {
                         Button { showLinkTV = true } label: {
                             Label("Link Apple TV", systemImage: "appletv")
                         }
+                        Button { showFeedback = true } label: {
+                            Label("Send Feedback", systemImage: "lightbulb")
+                        }
                         Divider()
                         Button(role: .destructive) {
                             AuthService.shared.signOut()
                         } label: {
                             Label("Sign Out", systemImage: "rectangle.portrait.and.arrow.right")
                         }
+                        Button(role: .destructive) {
+                            showDeleteConfirm = true
+                        } label: {
+                            Label("Delete Account", systemImage: "trash")
+                        }
                     } label: {
                         Image(systemName: "person.circle.fill")
                     }
                 }
             }
+            .alert("Delete Account", isPresented: $showDeleteConfirm) {
+                Button("Cancel", role: .cancel) { }
+                Button("Delete", role: .destructive) {
+                    Task {
+                        await AuthService.shared.deleteAccount()
+                        if AuthService.shared.deleteError != nil {
+                            showDeleteError = true
+                        }
+                    }
+                }
+            } message: {
+                Text("Are you sure? This will permanently delete your account and all associated data. This action cannot be undone.")
+            }
+            .alert("Error", isPresented: $showDeleteError) {
+                Button("OK") { AuthService.shared.deleteError = nil }
+            } message: {
+                Text(auth.deleteError ?? "Unknown error")
+            }
+            .sheet(isPresented: $showFeedback) { FeedbackView() }
     }
 }
 
@@ -318,9 +350,18 @@ struct MediaCardButtonStyle: ButtonStyle {
 extension View {
     func mediaCardStyle() -> some View {
         #if os(tvOS)
-        self.buttonStyle(.card)
+        self.buttonStyle(TVMediaCardButtonStyle())
         #else
         self.buttonStyle(MediaCardButtonStyle())
         #endif
     }
 }
+
+#if os(tvOS)
+struct TVMediaCardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.85 : 1.0)
+    }
+}
+#endif

@@ -61,8 +61,12 @@ struct KidsLibraryView: View {
     func load() async {
         isLoading = true
         do {
-            let all = try await api.fetchAssets()
+            async let allAssets = api.fetchAssets()
+            async let liveStream = api.activeLiveStream()
+            let all = try await allAssets
             assets = all.filter { $0.category == "children" }
+            // Keep LiveStreamManager current so card borders reflect live state
+            LiveStreamManager.shared.update(stream: try? await liveStream, allAssets: all)
         } catch {
             print("Error: \(error)")
         }

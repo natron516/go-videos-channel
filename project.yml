@@ -9,6 +9,9 @@ packages:
   MuxStatsAVPlayer:
     url: https://github.com/muxinc/mux-stats-sdk-avplayer
     from: "3.0.0"
+  GoogleCastSDK:
+    url: https://github.com/SRGSSR/google-cast-sdk
+    from: "4.8.4"
 options:
   bundleIdPrefix: com.gospeloutreacholympia
   deploymentTarget:
@@ -47,6 +50,8 @@ targets:
         product: GoogleSignInSwift
       - package: MuxStatsAVPlayer
         product: MUXSDKStats
+      - package: GoogleCastSDK
+        product: GoogleCast
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gospeloutreacholympia.tv
@@ -60,8 +65,8 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        MARKETING_VERSION: "1.4"
-        CURRENT_PROJECT_VERSION: "31"
+        MARKETING_VERSION: "1.6.2"
+        CURRENT_PROJECT_VERSION: "57"
     scheme:
       testTargets: []
 
@@ -96,7 +101,7 @@ targets:
         INFOPLIST_FILE: Sources/Info-tvOS.plist
         INFOPLIST_KEY_CFBundleDisplayName: "GO Media"
         ASSETCATALOG_COMPILER_APPICON_NAME: "App Icon & Top Shelf Image"
-        MARKETING_VERSION: "1.4"
-        CURRENT_PROJECT_VERSION: "31"
+        MARKETING_VERSION: "1.6.2"
+        CURRENT_PROJECT_VERSION: "57"
     scheme:
       testTargets: []

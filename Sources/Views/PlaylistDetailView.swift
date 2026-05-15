@@ -71,6 +71,17 @@ struct PlaylistDetailView: View {
                                     }
                                     .mediaCardStyle()
                                     .contextMenu {
+                                        #if !os(tvOS)
+                                        if let url = asset.shareURL ?? asset.streamURL {
+                                            ShareLink(
+                                                item: url,
+                                                subject: Text(asset.title),
+                                                message: Text("Watch \(asset.title) on GO Videos")
+                                            ) {
+                                                Label("Share", systemImage: "square.and.arrow.up")
+                                            }
+                                        }
+                                        #endif
                                         Button(role: .destructive) {
                                             manager.removeAsset(asset.id, from: playlistId)
                                         } label: {

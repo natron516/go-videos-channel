@@ -1,5 +1,5 @@
 import SwiftUI
-import FirebaseRemoteConfig
+import FirebaseFirestore
 
 private let SERMON_PIN_FALLBACK = "1776"
 
@@ -13,17 +13,15 @@ struct PinLockView: View {
     @State private var pinReady: Bool = false
 
     private func fetchPin() {
-        let rc = RemoteConfig.remoteConfig()
-        let settings = RemoteConfigSettings()
-        settings.minimumFetchInterval = 0
-        rc.configSettings = settings
-        rc.setDefaults(["sermon_pin": SERMON_PIN_FALLBACK as NSObject])
-        rc.fetchAndActivate { _, _ in
-            let fetched = rc["sermon_pin"].stringValue.isEmpty ? SERMON_PIN_FALLBACK : rc["sermon_pin"].stringValue
-            DispatchQueue.main.async {
-                activePin = fetched
-                pinReady = true
-            }
+        // Enable the numpad immediately with the fallback so it never freezes
+        pinReady = true
+        // Then silently update from Firestore if a PIN has been set
+        let db = Firestore.firestore()
+        db.collection("config").document("app").getDocument { snap, error in
+            guard error == nil,
+                  let pin = snap?.data()?["sermon_pin"] as? String,
+                  !pin.isEmpty else { return }
+            DispatchQueue.main.async { self.activePin = pin }
         }
     }
 
@@ -113,6 +111,7 @@ struct PinLockView: View {
                 numpad
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .focusSection()
             #else
             VStack(spacing: 44) {
                 header
@@ -131,6 +130,7 @@ struct PinLockView: View {
         entered.append(digit)
         if entered.count == 4 {
             if entered == activePin {
+                PinUnlockManager.shared.unlock()
                 onUnlock()
             } else {
                 shaking = true
@@ -152,31 +152,49 @@ struct PinLockView: View {
     }
 }
 
+// Suppresses tvOS card shadow, scale, and system highlight
+private struct PinPlainButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+    }
+}
+
+// Label is its own view so @Environment(\.isFocused) correctly reflects
+// the button’s focus state (tvOS sets isFocused on the label, not the parent)
+private struct PinButtonLabel: View {
+    let label: String
+    let isSymbol: Bool
+    @Environment(\.isFocused) var isFocused
+
+    var body: some View {
+        Text(label)
+            .font(isSymbol
+                  ? .system(size: 22, weight: .medium)
+                  : .system(size: 28, weight: .semibold, design: .rounded))
+            .foregroundColor(.white)
+            .frame(width: 100, height: 68)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white.opacity(isFocused ? 0.18 : 0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.white.opacity(isFocused ? 1.0 : 0.2),
+                            lineWidth: isFocused ? 5 : 1)
+            )
+            .animation(.easeInOut(duration: 0.1), value: isFocused)
+    }
+}
+
 struct PinButton: View {
     let label: String
     var isSymbol: Bool = false
     let action: () -> Void
-    @Environment(\.isFocused) var isFocused
 
     var body: some View {
         Button(action: action) {
-            Text(label)
-                .font(isSymbol
-                      ? .system(size: 22, weight: .medium)
-                      : .system(size: 28, weight: .semibold, design: .rounded))
-                .foregroundColor(.white)
-                .frame(width: 100, height: 68)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.white.opacity(isFocused ? 0.22 : 0.08))
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 12)
-                        .stroke(Color.white.opacity(isFocused ? 0.8 : 0.15), lineWidth: isFocused ? 3 : 1)
-                )
-                .scaleEffect(isFocused ? 1.08 : 1.0)
-                .animation(.easeInOut(duration: 0.15), value: isFocused)
+            PinButtonLabel(label: label, isSymbol: isSymbol)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PinPlainButtonStyle())
     }
 }

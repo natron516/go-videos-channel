@@ -11,6 +11,8 @@ struct TabBarOnlyModifier: ViewModifier {
         }
     }
 }
+
+
 #endif
 
 // ─────────────────────────────────────────────────────────
@@ -19,34 +21,49 @@ struct TabBarOnlyModifier: ViewModifier {
 #if os(tvOS)
 
 enum TVSection: Int, CaseIterable, Identifiable {
-    case home, sermons, children, music, performance, funzone, listen, playlists, search
+    case home, sermons, children, music, performance, funzone, listen, playlists, search, privateContent
     var id: Int { rawValue }
 
     var title: String {
         switch self {
-        case .home:        return "Home"
-        case .sermons:     return "Sermons"
-        case .children:    return "Children's"
-        case .music:       return "Music"
-        case .performance: return "Shows"
-        case .funzone:     return "FunZone"
-        case .listen:      return "Listen"
-        case .playlists:   return "Playlists"
-        case .search:      return "Search"
+        case .home:            return "Home"
+        case .sermons:         return "Sermons"
+        case .children:        return "Children"
+        case .music:           return "Music"
+        case .performance:     return "Shows"
+        case .funzone:         return "FunZone"
+        case .listen:          return "Listen"
+        case .playlists:       return "Playlists"
+        case .search:          return "Search"
+        case .privateContent:  return "Private"
         }
     }
 
     var icon: String {
         switch self {
-        case .home:        return "house.fill"
-        case .sermons:     return "film.stack"
-        case .children:    return "star.circle.fill"
-        case .music:       return "music.note.tv.fill"
-        case .performance: return "theatermasks.fill"
-        case .funzone:     return "party.popper.fill"
-        case .listen:      return "headphones"
-        case .playlists:   return "music.note.list"
-        case .search:      return "magnifyingglass"
+        case .home:            return "house.fill"
+        case .sermons:         return "film.stack"
+        case .children:        return "star.circle.fill"
+        case .music:           return "music.note.tv.fill"
+        case .performance:     return "theatermasks.fill"
+        case .funzone:         return "party.popper.fill"
+        case .listen:          return "headphones"
+        case .playlists:       return "music.note.list"
+        case .search:          return "magnifyingglass"
+        case .privateContent:  return "lock.fill"
+        }
+    }
+
+    /// The Mux asset category this section displays, or nil if not category-based.
+    var assetCategory: String? {
+        switch self {
+        case .sermons:         return "sermon"
+        case .children:        return "children"
+        case .music:           return "music"
+        case .performance:     return "performance"
+        case .funzone:         return "funzone"
+        case .privateContent:  return "hidden"
+        default:               return nil
         }
     }
 }
@@ -61,13 +78,21 @@ private struct TVPlainButtonStyle: ButtonStyle {
 
 private enum SidebarFocus: Hashable {
     case section(TVSection)
-    case autoplay, shuffle, timer, signOut
+    case autoplay, shuffle, timer, profile
 }
 
 struct TVSidebar: View {
     @Binding var selection: TVSection
     @FocusState private var focused: SidebarFocus?
+    @Namespace private var sidebarNS
     @ObservedObject private var autoplay = AutoplayManager.shared
+    @ObservedObject private var auth = AuthService.shared
+    @ObservedObject private var liveManager = LiveStreamManager.shared
+    @EnvironmentObject var api: MuxAPI
+    @State private var showDeleteConfirm = false
+    @State private var showDeleteError = false
+    @State private var showProfileMenu = false
+    @State private var showFeedback = false
     @ObservedObject private var watchTimer = WatchTimerManager.shared
     @State private var showWatchTimer = false
 
@@ -82,17 +107,22 @@ struct TVSidebar: View {
                     .scaledToFit()
                     .frame(height: 130)
                     .padding(.horizontal, 16)
-                    .padding(.top, 50)
-                    .padding(.bottom, 12)
+                    .padding(.top, 70)
+                    .padding(.bottom, 16)
             }
 
             // Categories — no extra spacing, tightly packed
-            ForEach(TVSection.allCases.filter { $0 != .listen }) { section in
+            ForEach(TVSection.allCases.filter {
+                $0 != .listen && ($0 != .privateContent || auth.hasPrivateAccess)
+            }) { section in
+                let isLiveSection = section.assetCategory != nil &&
+                    (liveManager.liveAsset?.category ?? "") == section.assetCategory
                 Button { selection = section } label: {
-                    TVSidebarItem(section: section, isSelected: selection == section)
+                    TVSidebarItem(section: section, isSelected: selection == section, isLive: isLiveSection)
                 }
                 .buttonStyle(TVPlainButtonStyle())
                 .focused($focused, equals: .section(section))
+                .prefersDefaultFocus(section == selection, in: sidebarNS)
             }
 
             // Controls — below categories
@@ -102,8 +132,8 @@ struct TVSidebar: View {
                 .padding(.horizontal, 16)
                 .padding(.bottom, 12)
 
-            VStack(spacing: 12) {
-                HStack(spacing: 20) {
+            VStack(spacing: 16) {
+                HStack(spacing: 24) {
                     Button { autoplay.enabled.toggle() } label: {
                         TVCircleLabel(icon: autoplay.enabled ? "forward.end.fill" : "forward.end",
                                       color: autoplay.enabled ? .blue : .white, label: "AutoPlay")
@@ -118,12 +148,12 @@ struct TVSidebar: View {
                     .buttonStyle(TVPlainButtonStyle())
                     .focused($focused, equals: .shuffle)
                 }
-                HStack(spacing: 20) {
-                    Button { AuthService.shared.signOut() } label: {
-                        TVCircleLabel(icon: "person.circle", color: .white, label: "Sign Out")
+                HStack(spacing: 24) {
+                    Button { showProfileMenu = true } label: {
+                        TVCircleLabel(icon: "person.circle", color: .white, label: "Profile")
                     }
                     .buttonStyle(TVPlainButtonStyle())
-                    .focused($focused, equals: .signOut)
+                    .focused($focused, equals: .profile)
 
                     Button { showWatchTimer = true } label: {
                         TVCircleLabel(icon: "timer",
@@ -134,15 +164,50 @@ struct TVSidebar: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.bottom, 10)
+            .padding(.bottom, 20)
         }
         .frame(maxHeight: .infinity)
         .background(Color.black.opacity(0.55))
+        .focusScope(sidebarNS)
         .focusSection()
         .onChange(of: focused) { newVal in
-            if case .section(let s) = newVal { selection = s }
+            guard let newVal = newVal else { return }
+            if case .section(let s) = newVal {
+                selection = s
+            }
         }
+        .onChange(of: selection) { newVal in
+            if focused != .section(newVal) {
+                focused = .section(newVal)
+            }
+        }
+        .onAppear { focused = .section(selection) }
         .fullScreenCover(isPresented: $showWatchTimer) { WatchTimerSetupView() }
+        .confirmationDialog("Profile", isPresented: $showProfileMenu) {
+            Button("Send Feedback") { showFeedback = true }
+            Button("Sign Out") { AuthService.shared.signOut() }
+            Button("Delete Account", role: .destructive) { showDeleteConfirm = true }
+            Button("Cancel", role: .cancel) { }
+        }
+        .sheet(isPresented: $showFeedback) { FeedbackView() }
+        .alert("Delete Account", isPresented: $showDeleteConfirm) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                Task {
+                    await AuthService.shared.deleteAccount()
+                    if AuthService.shared.deleteError != nil {
+                        showDeleteError = true
+                    }
+                }
+            }
+        } message: {
+            Text("Are you sure? This will permanently delete your account and all associated data. This action cannot be undone.")
+        }
+        .alert("Error", isPresented: $showDeleteError) {
+            Button("OK") { AuthService.shared.deleteError = nil }
+        } message: {
+            Text(AuthService.shared.deleteError ?? "Unknown error")
+        }
     }
 }
 
@@ -178,7 +243,16 @@ struct TVCircleLabel: View {
 struct TVSidebarItem: View {
     let section: TVSection
     let isSelected: Bool
+    var isLive: Bool = false
     @Environment(\.isFocused) var isFocused
+    @ObservedObject private var liveManager = LiveStreamManager.shared
+
+    private var hasLive: Bool {
+        guard liveManager.isLive,
+              let cat = section.assetCategory,
+              let liveCat = liveManager.liveCategory else { return false }
+        return liveCat == cat
+    }
 
     var body: some View {
         HStack(spacing: 14) {
@@ -188,11 +262,17 @@ struct TVSidebarItem: View {
                 .foregroundColor(.white)
             Text(section.title)
                 .font(.system(size: 28, weight: isSelected ? .semibold : .regular))
+                .lineLimit(1)
                 .foregroundColor(.white)
+            if hasLive {
+                Circle()
+                    .fill(Color.red)
+                    .frame(width: 10, height: 10)
+            }
             Spacer()
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 19)
+        .padding(.vertical, 15)
         .background(
             RoundedRectangle(cornerRadius: 8)
                 .fill(
@@ -209,9 +289,12 @@ struct TVContentView: View {
     @EnvironmentObject var api: MuxAPI
     @State private var selection: TVSection = .home
     @State private var navPath = NavigationPath()
+    @State private var sermonUnlocked = PinUnlockManager.shared.isUnlocked
+    @ObservedObject private var liveManager = LiveStreamManager.shared
 
     var body: some View {
         ZStack {
+
             Color.black.ignoresSafeArea()
             Image("AppBackground")
                 .resizable()
@@ -221,7 +304,7 @@ struct TVContentView: View {
 
             HStack(spacing: 0) {
                 TVSidebar(selection: $selection)
-                    .frame(width: 320)
+                    .frame(width: 290)
 
                 Rectangle()
                     .fill(Color.white.opacity(0.08))
@@ -235,8 +318,24 @@ struct TVContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+
+        .task {
+            // Authoritative live stream poller — only this source clears the live state
+            while !Task.isCancelled {
+                let stream = try? await api.activeLiveStream()
+                let assets = (try? await api.fetchAssets()) ?? []
+                await MainActor.run {
+                    LiveStreamManager.shared.update(stream: stream, allAssets: assets, authoritative: true)
+                }
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+            }
+        }
         .onChange(of: selection) { _ in
             navPath = NavigationPath()
+            // sermonUnlocked intentionally NOT reset — PIN is once per session
+        }
+        .onReceive(NotificationCenter.default.publisher(for: AppNavigator.navigateToSermonsNotification)) { _ in
+            selection = .sermons
         }
     }
 
@@ -244,14 +343,32 @@ struct TVContentView: View {
     var detailView: some View {
         switch selection {
         case .home:        HomeView()
-        case .sermons:     SermonLibraryView()
+        case .sermons:
+            ZStack {
+                // Always present so it pre-loads while PIN is showing.
+                // Disabled keeps focus out of the grid until unlocked.
+                SermonLibraryView()
+                    .disabled(!sermonUnlocked)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if !sermonUnlocked {
+                    PinLockView {
+                        PinUnlockManager.shared.unlock()
+                        sermonUnlocked = true
+                    }
+                        .background(Color.black)
+                        .ignoresSafeArea()
+                        .focusSection()
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .children:    CategoryLibraryView(title: "Children's",   category: "children",    icon: "star.circle.fill")
         case .music:       CategoryLibraryView(title: "Music",        category: "music",       icon: "music.note.tv.fill")
         case .performance: CategoryLibraryView(title: "Shows",        category: "performance", icon: "theatermasks.fill")
         case .funzone:     CategoryLibraryView(title: "FunZone",      category: "funzone",     icon: "party.popper.fill")
-        case .listen:      AppleMusicView()
-        case .playlists:   PlaylistsView()
-        case .search:      SearchView()
+        case .listen:          AppleMusicView()
+        case .playlists:       PlaylistsView()
+        case .search:          SearchView()
+        case .privateContent:  CategoryLibraryView(title: "Private", category: "hidden", icon: "lock.fill", includePrivate: true)
         }
     }
 }
@@ -270,44 +387,83 @@ struct ContentView: View {
         ZStack(alignment: .top) {
             mainTabs.modifier(TabBarOnlyModifier())
         }
+        .onReceive(NotificationCenter.default.publisher(for: AppNavigator.navigateToSermonsNotification)) { _ in
+            selectedTab = 1
+        }
         #endif
     }
 
     #if !os(tvOS)
+    @State private var selectedTab: Int = 0
+    @ObservedObject private var auth = AuthService.shared
+    @ObservedObject private var liveManager = LiveStreamManager.shared
+
+    /// Returns true when a live stream is active in the given Mux category.
+    private func isLive(_ category: String) -> Bool {
+        guard liveManager.isLive, let liveCat = liveManager.liveCategory else { return false }
+        return liveCat == category
+    }
+
+
+
     @ViewBuilder
     var mainTabs: some View {
-        TabView {
+        TabView(selection: $selectedTab) {
             NavigationStack { HomeView() }
                 .tabItem { Label("Home", systemImage: "house.fill") }
+                .tag(0)
 
             NavigationStack { SermonLibraryView() }
-                .tabItem { Label("Sermons", systemImage: "film.stack") }
+                .tabItem { Label(isLive("sermon") ? "🔴 Sermons" : "Sermons", systemImage: "film.stack") }
+                .tag(1)
 
             NavigationStack {
                 CategoryLibraryView(title: "Children's", category: "children", icon: "star.circle.fill")
             }
-            .tabItem { Label("Children's", systemImage: "star.circle.fill") }
+            .tabItem { Label(isLive("children") ? "🔴 Children's" : "Children's", systemImage: "star.circle.fill") }
+            .tag(2)
 
             NavigationStack {
                 CategoryLibraryView(title: "Music", category: "music", icon: "music.note.tv.fill")
             }
-            .tabItem { Label("Music", systemImage: "music.note.tv.fill") }
+            .tabItem { Label(isLive("music") ? "🔴 Music" : "Music", systemImage: "music.note.tv.fill") }
+            .tag(3)
 
             NavigationStack {
                 CategoryLibraryView(title: "Performances", category: "performance", icon: "theatermasks.fill")
             }
-            .tabItem { Label("Shows", systemImage: "theatermasks.fill") }
+            .tabItem { Label(isLive("performance") ? "🔴 Shows" : "Shows", systemImage: "theatermasks.fill") }
+            .tag(4)
 
             NavigationStack {
                 CategoryLibraryView(title: "FunZone", category: "funzone", icon: "party.popper.fill")
             }
-            .tabItem { Label("FunZone", systemImage: "party.popper.fill") }
-
-            NavigationStack { AppleMusicView() }
-                .tabItem { Label("Listen", systemImage: "headphones") }
+            .tabItem { Label(isLive("funzone") ? "🔴 FunZone" : "FunZone", systemImage: "party.popper.fill") }
+            .tag(5)
 
             NavigationStack { PlaylistsView() }
                 .tabItem { Label("Lists", systemImage: "music.note.list") }
+                .tag(6)
+
+            if auth.hasPrivateAccess {
+                NavigationStack {
+                    CategoryLibraryView(title: "Private", category: "hidden", icon: "lock.fill", includePrivate: true)
+                }
+                .tabItem { Label(isLive("hidden") ? "🔴 Private" : "Private", systemImage: "lock.fill") }
+                .tag(7)
+            }
+        }
+
+        .task {
+            // Authoritative live stream poller for iOS (mirrors tvOS poller)
+            while !Task.isCancelled {
+                let stream = try? await api.activeLiveStream()
+                let assets = (try? await api.fetchAllAssets()) ?? []
+                await MainActor.run {
+                    LiveStreamManager.shared.update(stream: stream, allAssets: assets, authoritative: true)
+                }
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+            }
         }
     }
     #endif

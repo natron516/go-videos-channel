@@ -10,10 +10,8 @@ exports.mintTVToken = onDocumentUpdated("tvSessions/{sessionCode}", async (event
   const before = event.data.before.data();
   const after = event.data.after.data();
 
-  // Only act when uid is newly set and customToken not yet written
   if (!after.uid || after.customToken || before.uid === after.uid) return;
 
-  // Check session isn't expired (10 min window)
   const created = after.createdAt?.toMillis?.() ?? 0;
   if (Date.now() - created > 10 * 60 * 1000) {
     await event.data.after.ref.update({ status: "expired" });

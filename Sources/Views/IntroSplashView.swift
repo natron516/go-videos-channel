@@ -5,7 +5,7 @@ struct IntroSplashView: View {
     private static var hasPlayedSplash = false
 
     @State private var showContent = IntroSplashView.hasPlayedSplash
-    @State private var videoOpacity: Double = IntroSplashView.hasPlayedSplash ? 0.0 : 1.0
+    @State private var videoOpacity: Double = 0.0  // starts invisible, fades in
     @State private var player: AVPlayer?
     @ObservedObject private var watchTimer = WatchTimerManager.shared
 
@@ -58,28 +58,47 @@ struct IntroSplashView: View {
         }
 
         let avPlayer = AVPlayer(url: url)
-        avPlayer.isMuted = false
+        avPlayer.isMuted = true
         self.player = avPlayer
 
-        // Listen for video end
-        NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime,
-            object: avPlayer.currentItem,
-            queue: .main
-        ) { _ in
-            // Dissolve out
+        let dismissSplash = {
             IntroSplashView.hasPlayedSplash = true
+            // Dissolve splash out, content in simultaneously
             withAnimation(.easeInOut(duration: 0.8)) {
                 showContent = true
                 videoOpacity = 0
             }
-            // Clean up player after fade
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
                 self.player = nil
             }
         }
 
-        avPlayer.play()
+        // Fade video in on start
+        let asset = AVAsset(url: url)
+        Task {
+            if let duration = try? await asset.load(.duration), duration.isNumeric {
+                let halfTime = CMTimeMultiplyByFloat64(duration, multiplier: 0.5)
+                await avPlayer.seek(to: .zero)
+                avPlayer.play()
+                // Fade in
+                withAnimation(.easeIn(duration: 0.4)) {
+                    videoOpacity = 1.0
+                }
+                // Dissolve out at halfway point
+                DispatchQueue.main.asyncAfter(deadline: .now() + halfTime.seconds) {
+                    dismissSplash()
+                }
+            } else {
+                // Fallback: listen for video end
+                avPlayer.play()
+                withAnimation(.easeIn(duration: 0.4)) { videoOpacity = 1.0 }
+                NotificationCenter.default.addObserver(
+                    forName: .AVPlayerItemDidPlayToEndTime,
+                    object: avPlayer.currentItem,
+                    queue: .main
+                ) { _ in dismissSplash() }
+            }
+        }
     }
 }
 

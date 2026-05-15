@@ -1,6 +1,10 @@
 import SwiftUI
 import AVKit
 import MUXSDKStats
+import FirebaseAuth
+#if !os(tvOS)
+import GoogleCast
+#endif
 
 // MARK: - Mux Data ENV Key
 private let kMuxDataEnvKey = "kmoo2e3phld20msigd6flcreb"
@@ -17,6 +21,7 @@ struct MuxAnalytics {
     static func makeCustomerData(playerName: String, url: URL, asset: MuxAsset? = nil, isLive: Bool = false) -> MUXSDKCustomerData {
         let playerData = MUXSDKCustomerPlayerData(propertyKey: kMuxDataEnvKey)
         playerData?.playerName = "GO Media - \(playerName)"
+        playerData?.viewerUserId = Auth.auth().currentUser?.uid
 
         let videoData = MUXSDKCustomerVideoData()
         if let asset = asset {
@@ -72,16 +77,61 @@ struct MuxAnalytics {
 // MARK: - Present AVPlayerViewController via UIKit root VC
 
 func presentPlayer(url: URL, autoplay: Bool = false, asset: MuxAsset? = nil) {
-    let item = AVPlayerItem(url: url)
-    item.automaticallyPreservesTimeOffsetFromLive = true
+    // Detect live asset: check manager first, fall back to preparing status
+    let isLiveAsset: Bool
+    if let asset = asset {
+        isLiveAsset = LiveStreamManager.shared.isAssetLive(asset) || asset.status == "preparing"
+    } else {
+        isLiveAsset = false
+    }
+    // Use HLS proxy for live assets — strips EXT-X-PROGRAM-DATE-TIME so AVKit
+    // shows elapsed time with seconds instead of wall-clock time
+    let item = isLiveAsset ? LiveHLSProxy.makePlayerItem(url: url) : AVPlayerItem(url: url)
+    if !isLiveAsset { item.automaticallyPreservesTimeOffsetFromLive = true }
     let player = AVPlayer(playerItem: item)
+    // AirPlay: use native full-screen external playback instead of mirroring
+    player.allowsExternalPlayback = true
+    player.usesExternalPlaybackWhileExternalScreenIsActive = true
     let vc = AVPlayerViewController()
     vc.player = player
 
     // Track URL → assetId mapping and resume from saved position
     let assetId = asset?.id ?? MuxAnalytics.playbackId(from: url)
     MuxAssetURLTracker.track(url: url, assetId: assetId)
-    if PlaybackProgress.shared.hasProgress(for: assetId) {
+    // Also track the proxy URL so the periodic observer can find the assetId
+    if isLiveAsset, let proxyURL = URL(string: url.absoluteString.replacingOccurrences(of: "https://", with: "\(LiveHLSProxy.scheme)://")) {
+        MuxAssetURLTracker.track(url: proxyURL, assetId: assetId)
+    }
+    if isLiveAsset {
+        // Read saved position BEFORE clearing — saveAndClear() writes to PlaybackProgress on dismiss
+        let resumePos: Double? = PlaybackProgress.shared.hasProgress(for: assetId)
+            ? PlaybackProgress.shared.position(for: assetId) : nil
+        PlaybackProgress.shared.clear(assetId: assetId)
+        var liveObs: NSKeyValueObservation?
+        liveObs = player.currentItem?.observe(\.status, options: [.new]) { [weak player] item, _ in
+            guard item.status == .readyToPlay else { return }
+            if let pos = resumePos {
+                // Resume from where user left off
+                let time = CMTime(seconds: pos, preferredTimescale: 600)
+                player?.seek(to: time, toleranceBefore: .zero, toleranceAfter: CMTime(seconds: 2, preferredTimescale: 600))
+            } else {
+                // First open — jump to live edge
+                player?.seek(to: .positiveInfinity, toleranceBefore: .positiveInfinity, toleranceAfter: .positiveInfinity)
+            }
+            liveObs?.invalidate(); liveObs = nil
+        }
+    } else if let deepSeek = DeepLinkSeekManager.shared.pendingSeek {
+        // Shared link with timecode — seek to the requested position
+        DeepLinkSeekManager.shared.pendingSeek = nil
+        var obs: NSKeyValueObservation?
+        obs = player.currentItem?.observe(\.status, options: [.new]) { [weak player] item, _ in
+            if item.status == .readyToPlay {
+                let time = CMTime(seconds: deepSeek, preferredTimescale: 600)
+                player?.seek(to: time, toleranceBefore: .zero, toleranceAfter: CMTime(seconds: 2, preferredTimescale: 600))
+                obs?.invalidate(); obs = nil
+            }
+        }
+    } else if PlaybackProgress.shared.hasProgress(for: assetId) {
         var obs: NSKeyValueObservation?
         obs = player.currentItem?.observe(\.status, options: [.new]) { [weak player] item, _ in
             if item.status == .readyToPlay {
@@ -106,6 +156,9 @@ func presentPlayer(url: URL, autoplay: Bool = false, asset: MuxAsset? = nil) {
     var top = root
     while let presented = top.presentedViewController { top = presented }
 
+    sessionURL   = url
+    sessionTitle = asset?.title
+
     if autoplay, top is AVPlayerViewController {
         top.dismiss(animated: false) {
             MuxAnalytics.destroy(playerName: "main")
@@ -115,6 +168,9 @@ func presentPlayer(url: URL, autoplay: Bool = false, asset: MuxAsset? = nil) {
         presentPlayerFresh(vc: vc, player: player, from: top)
     }
 }
+
+private var sessionURL: URL?
+private var sessionTitle: String?
 
 private func presentPlayerFresh(vc: AVPlayerViewController, player: AVPlayer, from presenter: UIViewController) {
     // Save position periodically while playing
@@ -128,7 +184,8 @@ private func presentPlayerFresh(vc: AVPlayerViewController, player: AVPlayer, fr
               let assetId = MuxAssetURLTracker.assetId(for: avUrl)
         else { return }
         let pos = player.currentTime().seconds
-        let dur = item.duration.seconds.isNaN ? nil : item.duration.seconds
+        let rawDur = item.duration.seconds
+        let dur = (rawDur.isNaN || rawDur.isInfinite) ? nil : rawDur
         PlaybackProgress.shared.save(assetId: assetId, position: pos, duration: dur)
     }
 
@@ -151,15 +208,18 @@ private func presentPlayerFresh(vc: AVPlayerViewController, player: AVPlayer, fr
         player.play()
         AutoplayManager.shared.preloadNext()
     }
-    // Add watch timer overlay after presentation (deferred to avoid layout stall)
+    // Add overlays after presentation (deferred to avoid layout stall)
     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
         if WatchTimerManager.shared.isRunning {
             addTimerOverlay(to: vc)
         }
+        #if !os(tvOS)
+        addPlayerButtons(to: vc)
+        #endif
     }
 
     // Store observer reference so dismissTopPlayer() can clean up
-    ActivePlayerSession.shared.set(player: player, observer: progressObserver)
+    ActivePlayerSession.shared.set(player: player, observer: progressObserver, url: sessionURL, title: sessionTitle)
 }
 
 /// Dismiss the topmost AVPlayerViewController
@@ -187,6 +247,9 @@ func playNextInExistingPlayer(url: URL, preloadedItem: AVPlayerItem? = nil, asse
 
     let item = preloadedItem ?? AVPlayerItem(url: url)
     let player = AVPlayer(playerItem: item)
+    // AirPlay: use native full-screen external playback instead of mirroring
+    player.allowsExternalPlayback = true
+    player.usesExternalPlaybackWhileExternalScreenIsActive = true
 
     // Resume from saved position
     let assetId = asset?.id ?? MuxAnalytics.playbackId(from: url)
@@ -261,13 +324,231 @@ struct AVKitVideoPlayer: UIViewControllerRepresentable {
 }
 
 class PlayerHolder: ObservableObject {
-    let player = AVPlayer()
+    let player: AVPlayer = {
+        let p = AVPlayer()
+        // AirPlay: use native full-screen external playback instead of mirroring
+        p.allowsExternalPlayback = true
+        p.usesExternalPlaybackWhileExternalScreenIsActive = true
+        return p
+    }()
     func load(url: URL) {
         let item = AVPlayerItem(url: url)
         item.automaticallyPreservesTimeOffsetFromLive = true
         player.replaceCurrentItem(with: item)
     }
 }
+
+// MARK: - Custom Player Buttons (Share + Cast)
+
+#if !os(tvOS)
+
+func addPlayerButtons(to vc: UIViewController) {
+    guard vc is AVPlayerViewController else { return }
+    let manager = PlayerButtonsManager(vc: vc)
+    manager.addButtons()
+    // Keep manager alive for the lifetime of vc's view
+    objc_setAssociatedObject(vc.view, &PlayerButtonsManager.managerKey, manager, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
+}
+
+private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate {
+    static var managerKey = "playerButtonsManager"
+
+    private weak var vc: UIViewController?
+    private weak var shareBtn: UIButton?
+    private weak var castBtn: GCKUICastButton?
+    private weak var pillView: UIVisualEffectView?
+    private var hideTimer: Timer?
+    private var dismissTimer: Timer?
+    private var buttonWindow: UIWindow?
+
+    init(vc: UIViewController) {
+        self.vc = vc
+        super.init()
+    }
+
+    func addButtons() {
+        guard let vc = vc, let scene = vc.view.window?.windowScene else { return }
+
+        // Floating UIWindow — always above AVPlayerViewController’s entire layer stack
+        let window = PassthroughWindow(windowScene: scene)
+        window.windowLevel = UIWindow.Level.alert + 1
+        window.backgroundColor = .clear
+        let rootVC = UIViewController()
+        rootVC.view = PassthroughView()
+        rootVC.view.backgroundColor = .clear
+        window.rootViewController = rootVC
+        window.isHidden = false
+        buttonWindow = window
+        let container = rootVC.view!
+
+        // Blurred pill matching AVPlayerViewController’s native control style
+        let pill = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
+        pill.clipsToBounds = true
+        pill.layer.cornerRadius = 22
+        pill.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(pill)
+        self.pillView = pill
+
+        // Share
+        let share = UIButton(type: .system)
+        share.setImage(UIImage(systemName: "square.and.arrow.up"), for: .normal)
+        share.tintColor = .white
+        share.translatesAutoresizingMaskIntoConstraints = false
+        share.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
+        pill.contentView.addSubview(share)
+        self.shareBtn = share
+
+        // Cast
+        let cast = GCKUICastButton(frame: .zero)
+        cast.tintColor = .white
+        cast.translatesAutoresizingMaskIntoConstraints = false
+        pill.contentView.addSubview(cast)
+        self.castBtn = cast
+
+        NSLayoutConstraint.activate([
+            // Buttons inside pill
+            share.leadingAnchor.constraint(equalTo: pill.contentView.leadingAnchor, constant: 8),
+            share.centerYAnchor.constraint(equalTo: pill.contentView.centerYAnchor),
+            share.widthAnchor.constraint(equalToConstant: 36),
+            share.heightAnchor.constraint(equalToConstant: 36),
+            cast.leadingAnchor.constraint(equalTo: share.trailingAnchor, constant: 4),
+            cast.trailingAnchor.constraint(equalTo: pill.contentView.trailingAnchor, constant: -8),
+            cast.centerYAnchor.constraint(equalTo: pill.contentView.centerYAnchor),
+            cast.widthAnchor.constraint(equalToConstant: 36),
+            cast.heightAnchor.constraint(equalToConstant: 36),
+            // Pill position: top-leading, right after the native Done button pill (~100px wide)
+            pill.topAnchor.constraint(equalTo: container.safeAreaLayoutGuide.topAnchor, constant: -2),
+            pill.leadingAnchor.constraint(equalTo: container.safeAreaLayoutGuide.leadingAnchor, constant: UIDevice.current.userInterfaceIdiom == .pad ? 180 : 140),
+            pill.heightAnchor.constraint(equalToConstant: 44),
+        ])
+
+        // Show/hide in sync with player controls
+        vc.view.gestureRecognizers?.forEach { $0.cancelsTouchesInView = false }
+        let tap = UITapGestureRecognizer(target: self, action: #selector(handlePlayerTap))
+        tap.cancelsTouchesInView = false
+        tap.delegate = self
+        vc.view.addGestureRecognizer(tap)
+
+        // Cast handoff
+        NotificationCenter.default.addObserver(
+            forName: .gckCastStateDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak vc] _ in
+            guard CastManager.shared.isConnected,
+                  let url = ActivePlayerSession.shared.currentURL else { return }
+            let time = ActivePlayerSession.shared.currentTime ?? 0
+            if let playerVC = vc as? AVPlayerViewController { playerVC.player?.pause() }
+            CastManager.shared.cast(url: url, title: ActivePlayerSession.shared.currentTitle, startTime: time)
+        }
+
+        // Tear down window when player is dismissed
+        dismissTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self, weak vc] t in
+            guard let self else { t.invalidate(); return }
+            if vc?.view.window == nil { self.tearDown(); t.invalidate() }
+        }
+
+        scheduleHide()
+    }
+
+    private func findView(named fragment: String, in view: UIView) -> UIView? {
+        if NSStringFromClass(type(of: view)).contains(fragment) { return view }
+        for sub in view.subviews { if let f = findView(named: fragment, in: sub) { return f } }
+        return nil
+    }
+
+    // MARK: Visibility
+
+    private func showButtons() {
+        pillView?.alpha = 1
+        shareBtn?.alpha = 1
+        castBtn?.alpha = 1
+    }
+
+    private func scheduleHide() {
+        hideTimer?.invalidate()
+        hideTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
+            UIView.animate(withDuration: 0.3) {
+                self?.pillView?.alpha = 0
+                self?.shareBtn?.alpha = 0
+                self?.castBtn?.alpha = 0
+            }
+        }
+    }
+
+    private func showAndKeep() {
+        showButtons()
+        scheduleHide()
+    }
+
+    private func tearDown() {
+        hideTimer?.invalidate()
+        dismissTimer?.invalidate()
+        buttonWindow?.isHidden = true
+        buttonWindow = nil
+    }
+
+    @objc private func handlePlayerTap() { showAndKeep() }
+
+    // MARK: Share action
+
+    @objc func handleShare() {
+        showAndKeep()
+        guard let vc = vc else { return }
+        let session = ActivePlayerSession.shared
+        guard let url = session.currentURL else { return }
+
+        let seconds = Int(session.currentTime ?? 0)
+        let h = seconds / 3600, m = (seconds % 3600) / 60, s = seconds % 60
+        let timeStr = h > 0
+            ? String(format: "%d:%02d:%02d", h, m, s)
+            : String(format: "%d:%02d", m, s)
+        let title = session.currentTitle ?? "this video"
+
+        var comps = URLComponents()
+        comps.scheme = "govideos"
+        comps.host   = "play"
+        comps.queryItems = [
+            URLQueryItem(name: "url",   value: url.absoluteString),
+            URLQueryItem(name: "t",     value: "\(seconds)"),
+            URLQueryItem(name: "title", value: title),
+        ]
+        let shareURL = comps.url ?? url
+        let message  = "Watch \"\(title)\" from \(timeStr) on GO Videos"
+
+        let activityVC = UIActivityViewController(activityItems: [message, shareURL], applicationActivities: nil)
+        activityVC.popoverPresentationController?.sourceView = shareBtn
+        vc.present(activityVC, animated: true)
+    }
+
+    // MARK: UIGestureRecognizerDelegate
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+        return true
+    }
+}
+
+// Touch-transparent window + view: only capture hits on UIControl subviews
+// (buttons), pass everything else through to the player underneath.
+private class PassthroughWindow: UIWindow {
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        guard let hit = super.hitTest(point, with: event) else { return nil }
+        // Only capture taps on actual interactive controls
+        if hit is UIControl { return hit }
+        return nil
+    }
+}
+
+private class PassthroughView: UIView {
+    override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+        guard let hit = super.hitTest(point, with: event) else { return nil }
+        if hit is UIControl { return hit }
+        return nil
+    }
+}
+
+#endif
 
 // MARK: - Watch Timer Overlay
 

@@ -15,6 +15,24 @@ struct TVLoginView: View {
             Color.clear.appBackground()
 
             VStack(spacing: 32) {
+                if auth.accountDeleted {
+                    HStack(spacing: 12) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.title2)
+                            .foregroundColor(.green)
+                        Text("Your account has been successfully deleted.")
+                            .font(.title3.bold())
+                            .foregroundColor(.white)
+                    }
+                    .padding(20)
+                    .background(Color.green.opacity(0.15).cornerRadius(12))
+                    .onAppear {
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                            auth.accountDeleted = false
+                        }
+                    }
+                }
+
                 Text("📺").font(.system(size: 48))
 
                 Text("Sign In to\nGO Media")

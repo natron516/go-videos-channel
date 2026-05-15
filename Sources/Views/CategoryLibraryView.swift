@@ -4,6 +4,7 @@ struct CategoryLibraryView: View {
     let title: String
     let category: String
     let icon: String
+    var includePrivate: Bool = false
 
     @EnvironmentObject var api: MuxAPI
     @State private var assets: [MuxAsset] = []
@@ -78,6 +79,24 @@ struct CategoryLibraryView: View {
                                     } label: {
                                         Label("Add to Playlist", systemImage: "plus.circle")
                                     }
+                                    #if !os(tvOS)
+                                    if let url = asset.shareURL ?? asset.streamURL {
+                                        ShareLink(
+                                            item: url,
+                                            subject: Text(asset.title),
+                                            message: Text("Watch \(asset.title) on GO Videos")
+                                        ) {
+                                            Label("Share", systemImage: "square.and.arrow.up")
+                                        }
+                                    }
+                                    if CastManager.shared.isConnected, let url = asset.streamURL {
+                                        Button {
+                                            CastManager.shared.cast(url: url, title: asset.title)
+                                        } label: {
+                                            Label("Cast to TV", systemImage: "tv")
+                                        }
+                                    }
+                                    #endif
                                 }
                             }
                         }
@@ -106,8 +125,12 @@ struct CategoryLibraryView: View {
     func load() async {
         if assets.isEmpty { isLoading = true }
         do {
-            let all = try await api.fetchAssets()
+            async let allAssets = includePrivate ? api.fetchAllAssets() : api.fetchAssets()
+            async let liveStream = api.activeLiveStream()
+            let all = try await allAssets
             assets = all.filter { $0.category == category }
+            // Keep LiveStreamManager current so card borders reflect live state
+            LiveStreamManager.shared.update(stream: try? await liveStream, allAssets: all)
             prefetchThumbnails(assets.map(\.thumbnailURL))
         } catch { print("Error: \(error)") }
         isLoading = false

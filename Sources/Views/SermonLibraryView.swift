@@ -4,6 +4,9 @@ struct SermonLibraryView: View {
     @EnvironmentObject var api: MuxAPI
     @State private var assets: [MuxAsset] = []
     @State private var isLoading = true
+    #if !os(tvOS)
+    @State private var isUnlocked = PinUnlockManager.shared.isUnlocked
+    #endif
     @State private var addToPlaylistAssetId: String?
     @State private var showAddToPlaylist = false
     #if !os(tvOS)
@@ -21,7 +24,8 @@ struct SermonLibraryView: View {
     }
 
     var body: some View {
-        Group {
+        ZStack {
+          Group {
             if isLoading {
                 ZStack {
                     Color.black.ignoresSafeArea()
@@ -60,7 +64,7 @@ struct SermonLibraryView: View {
                                 Button {
                                     if let url = asset.streamURL {
                                         AutoplayManager.shared.setContext(asset: asset, playlist: assets)
-                                        presentPlayer(url: url)
+                                        presentPlayer(url: url, asset: asset)
                                     }
                                 } label: {
                                     SermonCardView(asset: asset)
@@ -73,6 +77,24 @@ struct SermonLibraryView: View {
                                     } label: {
                                         Label("Add to Playlist", systemImage: "plus.circle")
                                     }
+                                    #if !os(tvOS)
+                                    if let url = asset.shareURL ?? asset.streamURL {
+                                        ShareLink(
+                                            item: url,
+                                            subject: Text(asset.title),
+                                            message: Text("Watch \(asset.title) on GO Videos")
+                                        ) {
+                                            Label("Share", systemImage: "square.and.arrow.up")
+                                        }
+                                    }
+                                    if CastManager.shared.isConnected, let url = asset.streamURL {
+                                        Button {
+                                            CastManager.shared.cast(url: url, title: asset.title)
+                                        } label: {
+                                            Label("Cast to TV", systemImage: "tv")
+                                        }
+                                    }
+                                    #endif
                                 }
                             }
                         }
@@ -96,13 +118,30 @@ struct SermonLibraryView: View {
         .sheet(isPresented: $showWatchTimer) { WatchTimerSetupView() }
         .sheet(isPresented: $showSearch) { NavigationStack { SearchView() } }
         #endif
+
+          // iOS PIN overlay only — tvOS PIN is handled in TVContentView
+          #if !os(tvOS)
+          if !isUnlocked {
+            PinLockView {
+                PinUnlockManager.shared.unlock()
+                isUnlocked = true
+            }
+              .ignoresSafeArea()
+              .zIndex(1)
+          }
+          #endif
+        } // end ZStack
     }
 
     func load() async {
         if assets.isEmpty { isLoading = true }
         do {
-            let all = try await api.fetchAssets()
+            async let allAssets = api.fetchAssets()
+            async let liveStream = api.activeLiveStream()
+            let all = try await allAssets
             assets = all.filter { $0.category == "sermon" || $0.category == nil }
+            // Keep LiveStreamManager current so card borders reflect live state
+            LiveStreamManager.shared.update(stream: try? await liveStream, allAssets: all)
             prefetchThumbnails(assets.map(\.thumbnailURL))
         } catch { print("Error: \(error)") }
         isLoading = false
@@ -113,15 +152,26 @@ struct SermonLibraryView: View {
 
 struct SermonCardView: View {
     let asset: MuxAsset
+    var featured: Bool = false
     @Environment(\.isFocused) var isFocused
+    @ObservedObject private var liveManager = LiveStreamManager.shared
+
+    private var isLive: Bool { liveManager.isAssetLive(asset) }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: featured ? .center : .leading, spacing: featured ? 8 : 4) {
             // Thumbnail
             Color.clear
-                .aspectRatio(16/9, contentMode: .fit)
+                .aspectRatio({
+                    guard featured else { return 16.0/9.0 }
+                    #if os(tvOS)
+                    return 16.0/9.0
+                    #else
+                    return UIDevice.current.userInterfaceIdiom == .pad ? 16.0/9.0 : 21.0/9.0
+                    #endif
+                }(), contentMode: .fit)
                 .overlay(
-                    CachedAsyncImage(url: asset.thumbnailURL) {
+                    CachedAsyncImage(url: featured ? asset.featuredThumbnailURL : asset.thumbnailURL) {
                         Rectangle()
                             .fill(Color.gray.opacity(0.3))
                             .overlay(Image(systemName: "play.circle").font(.largeTitle).foregroundColor(.white))
@@ -129,7 +179,7 @@ struct SermonCardView: View {
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 8))
                 .overlay(alignment: .topTrailing) {
-                    if asset.status == "preparing" {
+                    if isLive {
                         Text("● LIVE")
                             .font(.caption.bold())
                             .foregroundColor(.white)
@@ -142,19 +192,23 @@ struct SermonCardView: View {
                 }
 
             Text(asset.title)
-                .font(.caption.bold())
+                .font(featured ? .title3.bold() : .caption.bold())
                 .lineLimit(2)
-                .multilineTextAlignment(.leading)
+                .multilineTextAlignment(featured ? .center : .leading)
+                .frame(maxWidth: .infinity, alignment: featured ? .center : .leading)
                 .foregroundColor(.primary)
 
             HStack(spacing: 4) {
                 if let date = asset.formattedDate {
-                    Text(date).font(.caption2).foregroundColor(.secondary)
+                    Text(date).font(featured ? .caption : .caption2).foregroundColor(.secondary)
                 }
                 if let duration = asset.duration {
-                    Text("· \(formatDuration(duration))").font(.caption2).foregroundColor(.secondary)
+                    Text("· \(formatDuration(duration))").font(featured ? .caption : .caption2).foregroundColor(.secondary)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: featured ? .center : .leading)
+
+            Spacer(minLength: 0)
         }
         #if os(tvOS)
         .padding(10)
@@ -162,22 +216,140 @@ struct SermonCardView: View {
         .padding(6)
         #endif
         #if os(tvOS)
-        .overlay(
+        .scaleEffect(featured ? 0.9 : 1.0) // 10% smaller for featured — more breathing room
+        .background(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.white, lineWidth: isFocused ? 4 : 0)
+                .fill(featured
+                    ? LinearGradient(
+                        colors: [Color(red: 0.13, green: 0.12, blue: 0.22), Color(red: 0.07, green: 0.06, blue: 0.14)],
+                        startPoint: .top, endPoint: .bottom)
+                    : LinearGradient(
+                        colors: [Color(red: 0.12, green: 0.11, blue: 0.18), Color(red: 0.08, green: 0.07, blue: 0.13)],
+                        startPoint: .top, endPoint: .bottom))
         )
-        .scaleEffect(isFocused ? 1.05 : 1.0)
+        .overlay(
+            Group {
+                if featured {
+                    // Gold bevel frame — stays gold on focus, gets brighter/thicker
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    isFocused ? Color.white : Color.white.opacity(0.75),
+                                    Color(red: 1.0,  green: 0.84, blue: 0.0),
+                                    Color(red: 0.83, green: 0.68, blue: 0.21),
+                                    isFocused ? Color(red: 0.6, green: 0.45, blue: 0.05) : Color(red: 0.35, green: 0.25, blue: 0.0),
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: isFocused ? 7 : 2.5
+                        )
+                    RoundedRectangle(cornerRadius: 11)
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.white.opacity(isFocused ? 0.5 : 0.35), Color.clear, Color.black.opacity(0.45)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.5
+                        )
+                        .padding(4)
+                } else {
+                    // Non-featured: gold bevel on focus, wraps whole card
+                    if isFocused {
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [
+                                        Color.white.opacity(0.85),
+                                        Color(red: 1.0,  green: 0.84, blue: 0.0),
+                                        Color(red: 0.83, green: 0.68, blue: 0.21),
+                                        Color(red: 0.35, green: 0.25, blue: 0.0),
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 5
+                            )
+                        RoundedRectangle(cornerRadius: 11)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.3), Color.clear, Color.black.opacity(0.4)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1.5
+                            )
+                            .padding(4)
+                    }
+                }
+            }
+        )
+        .shadow(
+            color: Color(red: 0.83, green: 0.68, blue: 0.21).opacity(
+                featured ? (isFocused ? 0.8 : 0.5) : (isFocused ? 0.5 : 0)
+            ),
+            radius: isFocused ? 16 : 10, x: 0, y: isFocused ? 8 : 5
+        )
+        .scaleEffect(isFocused ? 1.02 : 1.0)
         .animation(.easeInOut(duration: 0.15), value: isFocused)
         #else
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(Color.white.opacity(0.08))
+                .fill(featured
+                    ? LinearGradient(
+                        colors: [Color(red: 0.13, green: 0.12, blue: 0.22), Color(red: 0.07, green: 0.06, blue: 0.14)],
+                        startPoint: .top, endPoint: .bottom)
+                    : LinearGradient(
+                        colors: [Color.white.opacity(0.08), Color.white.opacity(0.08)],
+                        startPoint: .top, endPoint: .bottom))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+            Group {
+                if featured {
+                    // Outer bevel — gold gradient with highlight top-left, shadow bottom-right
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(
+                            LinearGradient(
+                                colors: [
+                                    Color.white.opacity(0.75),
+                                    Color(red: 1.0,  green: 0.84, blue: 0.0),
+                                    Color(red: 0.83, green: 0.68, blue: 0.21),
+                                    Color(red: 0.35, green: 0.25, blue: 0.0),
+                                ],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 4
+                        )
+                    // Inner bevel — subtle inset shadow effect
+                    RoundedRectangle(cornerRadius: 11)
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.white.opacity(0.35), Color.clear, Color.black.opacity(0.45)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.5
+                        )
+                        .padding(4)
+                } else {
+                    RoundedRectangle(cornerRadius: 14)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                }
+            }
+        )
+        .shadow(
+            color: featured ? Color(red: 0.83, green: 0.68, blue: 0.21).opacity(0.5) : .clear,
+            radius: 10, x: 0, y: 5
         )
         #endif
+        // Live red border around the whole card
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.red, lineWidth: isLive ? 3 : 0)
+        )
     }
 
     func formatDuration(_ seconds: Double) -> String {

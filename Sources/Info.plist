@@ -20,12 +20,27 @@
 	<array>
 		<string>audio</string>
 	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>GO Videos uses your local network to find and connect to Chromecast and smart TV devices for casting.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_googlecast._tcp</string>
+		<string>_6C3A18CB._googlecast._tcp</string>
+	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>com.googleusercontent.apps.419198793314-3ajdjnoe3kr0jkmki9ibnfacrm538boh</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.gospeloutreacholympia.tv</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>govideos</string>
 			</array>
 		</dict>
 	</array>

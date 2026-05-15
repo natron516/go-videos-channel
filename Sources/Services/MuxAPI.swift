@@ -32,21 +32,22 @@ class MuxAPI: ObservableObject {
 
     // MARK: - Assets (VOD)
 
-    /// Returns cached assets instantly if available, refreshing in the background if stale.
-    func fetchAssets() async throws -> [MuxAsset] {
-        // Return cache immediately if fresh enough
+    /// Returns all non-hidden assets including private ones (for authorized users).
+    func fetchAllAssets() async throws -> [MuxAsset] {
         if let cached = cachedAssets, let date = cachedAssetsDate {
-            if Date().timeIntervalSince(date) < cacheMaxAge {
-                return cached
-            }
-            // Stale — return cache now, refresh in background
-            Task.detached(priority: .utility) { [weak self] in
-                try? await self?.refreshAssets()
-            }
+            if Date().timeIntervalSince(date) < cacheMaxAge { return cached }
+            Task.detached(priority: .utility) { [weak self] in try? await self?.refreshAssets() }
             return cached
         }
-        // No cache — must fetch
         return try await refreshAssets()
+    }
+
+    /// Returns cached assets instantly if available, refreshing in the background if stale.
+    /// Private-category assets are excluded — use fetchAllAssets() for authorized access.
+    func fetchAssets() async throws -> [MuxAsset] {
+        // Return cache immediately if fresh enough
+        let all = try await fetchAllAssets()
+        return all.filter { $0.category != "hidden" }
     }
 
     @discardableResult
@@ -54,6 +55,7 @@ class MuxAPI: ObservableObject {
         let req = request(path: "/video/v1/assets?limit=100&order_direction=desc")
         let (data, _) = try await URLSession.shared.data(for: req)
         let response = try JSONDecoder().decode(MuxAssetsResponse.self, from: data)
+        // Cache all ready assets including hidden; fetchAssets() strips hidden for regular users
         let assets = response.data.filter { $0.status == "ready" || $0.status == "preparing" }
         await MainActor.run {
             cachedAssets = assets

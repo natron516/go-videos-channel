@@ -21,6 +21,28 @@
   .login { max-width: 400px; margin: 80px auto; background: #2a2a2a; border-radius: 16px; padding: 40px; text-align: center; }
   .login input { width: 100%; margin: 8px 0; padding: 10px; border-radius: 8px; border: 1px solid #555; background: #333; color: #fff; font-size: 15px; box-sizing: border-box; }
   .login button { margin-top: 16px; width: 100%; padding: 12px; background: #0a84ff; color: #fff; border: none; border-radius: 8px; font-size: 16px; cursor: pointer; }
+  /* Tabs */
+  .tabs { display: flex; gap: 4px; margin-bottom: 28px; border-bottom: 1px solid #333; padding-bottom: 0; }
+  .tab-btn { background: none; border: none; color: #888; font-size: 15px; font-weight: 600; padding: 10px 20px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tab-btn.active { color: #fff; border-bottom-color: #0a84ff; }
+  .tab-btn:hover:not(.active) { color: #ccc; }
+  /* Feedback cards */
+  .fb-card { background: #2a2a2a; border-radius: 12px; padding: 18px 20px; margin-bottom: 12px; position: relative; }
+  .fb-card.read { opacity: 0.45; }
+  .fb-text { font-size: 15px; line-height: 1.5; margin-bottom: 10px; white-space: pre-wrap; }
+  .fb-meta { font-size: 12px; color: #888; display: flex; gap: 16px; align-items: center; flex-wrap: wrap; }
+  .fb-badge { background: #333; border-radius: 4px; padding: 2px 8px; font-size: 11px; font-weight: 600; }
+  .fb-badge.ios { color: #5ac8fa; }
+  .fb-badge.tvos { color: #bf5af2; }
+  .fb-badge.ipados { color: #30d158; }
+  .fb-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .btn-sm { background: #3a3a3a; color: #fff; border: none; border-radius: 6px; padding: 5px 12px; font-size: 12px; cursor: pointer; }
+  .btn-sm:hover { background: #444; }
+  .btn-sm.danger { color: #ff453a; }
+  .btn-sm.danger:hover { background: #3a2020; }
+  .unread-dot { width: 8px; height: 8px; background: #0a84ff; border-radius: 50%; display: inline-block; margin-right: 6px; }
+  .fb-empty { color: #555; text-align: center; padding: 60px 0; font-size: 15px; }
+  #feedback-key-hint { color: #888; font-size: 13px; margin-bottom: 16px; }
 </style>
 </head>
 <body>
@@ -35,12 +57,40 @@
 </div>
 
 <div id="main" style="display:none">
-  <h1>Gospel Outreach — Video Manager</h1>
-  <p class="sub">Set categories and titles for your videos. Changes sync to the app instantly.</p>
-  <div id="assets"></div>
+  <h1>Gospel Outreach — Admin</h1>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('videos')">Videos</button>
+    <button class="tab-btn" onclick="switchTab('feedback')" id="feedback-tab-btn">Feedback</button>
+  </div>
+
+  <!-- Videos tab -->
+  <div id="tab-videos">
+    <p class="sub">Set categories and titles for your videos. Changes sync to the app instantly.</p>
+    <div id="assets"></div>
+  </div>
+
+  <!-- Feedback tab -->
+  <div id="tab-feedback" style="display:none">
+    <p class="sub">Suggestions submitted by app users.</p>
+    <p id="feedback-key-hint"></p>
+    <div id="feedback-list"><div class="fb-empty">Loading feedback…</div></div>
+  </div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, collection, getDocs, doc, updateDoc, deleteDoc, query, orderBy } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseApp = initializeApp({
+  apiKey: "AIzaSyAIP7-0-Ciop8tK0yOLwcSJhvwW6jPSKEo",
+  authDomain: "gospel-outreach-tv.firebaseapp.com",
+  projectId: "gospel-outreach-tv",
+  storageBucket: "gospel-outreach-tv.appspot.com",
+  messagingSenderId: "419198793314",
+  appId: "1:419198793314:ios:0f75087a30ce0f23da433b"
+});
+const db = getFirestore(firebaseApp);
+
 let TOKEN_ID, SECRET_KEY;
 
 const CATEGORIES = ['sermon','kids','music','performance'];
@@ -134,6 +184,72 @@ function formatDur(s) {
 }
 
 function esc(s) { return s.replace(/"/g,'&quot;'); }
+
+// ---- Tab switching ----
+function switchTab(tab) {
+  document.getElementById('tab-videos').style.display = tab === 'videos' ? 'block' : 'none';
+  document.getElementById('tab-feedback').style.display = tab === 'feedback' ? 'block' : 'none';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  if (tab === 'feedback') loadFeedback();
+}
+
+// ---- Feedback ----
+let feedbackLoaded = false;
+
+async function loadFeedback() {
+  const container = document.getElementById('feedback-list');
+  container.innerHTML = '<div class="fb-empty">Loading…</div>';
+  try {
+    const q = query(collection(db, 'feedback'), orderBy('timestamp', 'desc'));
+    const snap = await getDocs(q);
+    if (snap.empty) {
+      container.innerHTML = '<div class="fb-empty">No feedback yet — check back after users update to v1.5.2.</div>';
+      return;
+    }
+    const unread = snap.docs.filter(d => !d.data().read).length;
+    document.getElementById('feedback-tab-btn').textContent = unread > 0 ? `Feedback (${unread})` : 'Feedback';
+    container.innerHTML = '';
+    snap.docs.forEach(docSnap => {
+      const d = docSnap.data();
+      const ts = d.timestamp?.toDate ? d.timestamp.toDate().toLocaleString() : 'Unknown time';
+      const platform = (d.platform || 'Unknown').toLowerCase();
+      const badgeClass = platform === 'tvos' ? 'tvos' : platform === 'ipados' ? 'ipados' : 'ios';
+      const card = document.createElement('div');
+      card.className = 'fb-card' + (d.read ? ' read' : '');
+      card.id = 'fb-' + docSnap.id;
+      card.innerHTML = `
+        <div class="fb-text">${d.read ? '' : '<span class="unread-dot"></span>'}${esc(d.text || '')}</div>
+        <div class="fb-meta">
+          <span>${ts}</span>
+          <span class="fb-badge ${badgeClass}">${d.platform || 'Unknown'}</span>
+          ${d.appVersion ? `<span class="fb-badge">v${esc(d.appVersion)}</span>` : ''}
+        </div>
+        <div class="fb-actions">
+          ${!d.read ? `<button class="btn-sm" onclick="markRead('${docSnap.id}')">Mark as read</button>` : '<span style="color:#555;font-size:12px">Read</span>'}
+          <button class="btn-sm danger" onclick="deleteFeedback('${docSnap.id}')">Delete</button>
+        </div>`;
+      container.appendChild(card);
+    });
+  } catch(e) {
+    container.innerHTML = `<div class="fb-empty">Error loading feedback: ${e.message}</div>`;
+  }
+}
+
+async function markRead(id) {
+  await updateDoc(doc(db, 'feedback', id), { read: true });
+  loadFeedback();
+}
+
+async function deleteFeedback(id) {
+  if (!confirm('Delete this feedback?')) return;
+  await deleteDoc(doc(db, 'feedback', id));
+  loadFeedback();
+}
+
+window.switchTab = switchTab;
+window.markRead = markRead;
+window.deleteFeedback = deleteFeedback;
 </script>
 </body>
 </html>
