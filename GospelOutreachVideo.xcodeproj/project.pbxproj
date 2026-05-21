@@ -14,6 +14,7 @@
 		0AD1F60294B31719E317444E /* SermonLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BD92E99B40CCBA8DC03A528 /* SermonLibraryView.swift */; };
 		0C01E4D8F2FA2DBE82323BC5 /* DeepLinkHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = C2330CEFA36FEEF6C6AC5350 /* DeepLinkHandler.swift */; };
 		0C7298C66148AE5696764530 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 66C02F962520C695D3B6AD13 /* Assets.xcassets */; };
+		12A93D5772617250437DD6EE /* ForceUpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E911BC137B356D7EF221459E /* ForceUpdateService.swift */; };
 		12DF277ED23ED1CEC93E03C2 /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = 72BA9A315F8E4750E796317C /* GoogleSignInSwift */; };
 		1595DF7B19A332EA231DBF94 /* AppleMusicService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C69D01F2C33DBCAFA9788C80 /* AppleMusicService.swift */; };
 		186B314C7E51D486202EB1A4 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF44774A7E29CBA566F7B616 /* AuthService.swift */; };
@@ -33,6 +34,7 @@
 		35DA88EF2CB623D6F207B819 /* IntroSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD4BB34D3DA66E0357FBA38 /* IntroSplashView.swift */; };
 		36824E447127B361217F92C6 /* WatchTimerSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32539140281A45F015BC6E63 /* WatchTimerSetupView.swift */; };
 		37E28E3A6C4CBE42F46BBFE4 /* LinkTVView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F99CAF0518F07F240E8F996 /* LinkTVView.swift */; };
+		39C6FB0035C9097ED69D5CED /* ForceUpdateService.swift in Sources */ = {isa = PBXBuildFile; fileRef = E911BC137B356D7EF221459E /* ForceUpdateService.swift */; };
 		3AE010A2643F8FF2150D6352 /* AlbumDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF40A96E6DED709473D20C93 /* AlbumDetailView.swift */; };
 		3E3E6EA214DB88B7E1C3EE4C /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 9A8A8DED16B6E9F5CB245016 /* FirebaseAuth */; };
 		3EAC9BE14027DC9F3C3D5F8B /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13D72D60A6D18E0B02CF14CC /* SearchView.swift */; };
@@ -45,8 +47,10 @@
 		51CF61EE7E25E11F93636807 /* MuxAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646E57631B8B719E54844D3F /* MuxAPI.swift */; };
 		55DB8A5AF7BD4C5DBE0F6D62 /* LiveStreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A769F42E63AF02B0A7CE9ED9 /* LiveStreamView.swift */; };
 		58D9239992C4B6BF5F72027B /* MuxModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA5B13C720CB1870157FFA85 /* MuxModels.swift */; };
+		597AEE31F5CC89036B080B9F /* ForceUpdateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79685BD9EB484543EC21A89D /* ForceUpdateView.swift */; };
 		59FDE1EB10B5A7FCD021A836 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13D72D60A6D18E0B02CF14CC /* SearchView.swift */; };
 		5FFC1F0D9AC340815F6FE7FC /* WatchTimerSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32539140281A45F015BC6E63 /* WatchTimerSetupView.swift */; };
+		631E19A89F9CB54FB61EB301 /* AudioDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69EA392FA8C68A25E0C96640 /* AudioDownloadManager.swift */; };
 		66E8BF35BBC372CBDDFA27F5 /* MUXSDKStats in Frameworks */ = {isa = PBXBuildFile; productRef = 8961F1906985231ADA4CACED /* MUXSDKStats */; };
 		6914B6704E0FA70AF7D96112 /* PinLockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685CB064472934E29B70E6AE /* PinLockView.swift */; };
 		6A13C68CE85152165CB1733F /* WatchTimerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62057527ABAE28173080BB26 /* WatchTimerManager.swift */; };
@@ -93,6 +97,7 @@
 		CB5A8B050FCAD13F8B155DDB /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EB98D4E713668484DE5C7A0 /* HomeView.swift */; };
 		D16AC6ED72902428AA035328 /* TVLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 405FD0F618D0C129F32D7305 /* TVLoginView.swift */; };
 		D872DB2B904394F5A149CB3E /* LinkTVView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F99CAF0518F07F240E8F996 /* LinkTVView.swift */; };
+		D8BA8BFA91F29D86EC974FA8 /* AudioDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69EA392FA8C68A25E0C96640 /* AudioDownloadManager.swift */; };
 		DD7B191C841786D7CD1DFB4C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 670782E11CBDCC9BFCA18086 /* GoogleService-Info.plist */; };
 		DE36B174B6462DE28DDCE5C8 /* MuxAssetURLTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B67BC39A37CEB8494AC55EC /* MuxAssetURLTracker.swift */; };
 		DF7CB206541F1AD967E989AA /* BrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453989F1DC1AAE3C937D73D8 /* BrowseView.swift */; };
@@ -104,6 +109,7 @@
 		E79CECE78435209C62F86880 /* PlaylistModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58CEE9694631039DF5B41E9C /* PlaylistModels.swift */; };
 		EA62F0DE70A4291F8AC89C81 /* CastManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D541D1C50347539E3BBBF692 /* CastManager.swift */; };
 		EED463D68A7013E7A27F3E88 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = FB4D0E603F0298E4139F45A6 /* GoogleSignIn */; };
+		EFB7D1DBF7936A893BA67EE4 /* ForceUpdateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79685BD9EB484543EC21A89D /* ForceUpdateView.swift */; };
 		F0BA75E373A36869418FAEC4 /* intro_splash.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = F287C5EA0C821E00E6654798 /* intro_splash.mp4 */; };
 		F175EC4FF1E90CA2AD1DE46D /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB42A7C8E837D2D8F177E92 /* ContentView.swift */; };
 		F47EC815985D54FAEDE10A6D /* KidsLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CA6C9033A9513A86B6F38F2 /* KidsLibraryView.swift */; };
@@ -142,9 +148,11 @@
 		66C02F962520C695D3B6AD13 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		670782E11CBDCC9BFCA18086 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		685CB064472934E29B70E6AE /* PinLockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinLockView.swift; sourceTree = "<group>"; };
+		69EA392FA8C68A25E0C96640 /* AudioDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDownloadManager.swift; sourceTree = "<group>"; };
 		6AC99C87C7358E44EBC918F7 /* CachedAsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CachedAsyncImage.swift; sourceTree = "<group>"; };
 		6BB42A7C8E837D2D8F177E92 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		6CA6C9033A9513A86B6F38F2 /* KidsLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KidsLibraryView.swift; sourceTree = "<group>"; };
+		79685BD9EB484543EC21A89D /* ForceUpdateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForceUpdateView.swift; sourceTree = "<group>"; };
 		8134AF3DEEAD343E14DE7176 /* PinUnlockManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PinUnlockManager.swift; sourceTree = "<group>"; };
 		867C773603C1C6A5BD73A6A0 /* GospelOutreachTVApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GospelOutreachTVApp.swift; sourceTree = "<group>"; };
 		8B5D74EED32CD28289B0C277 /* GospelOutreachVideo_tvOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GospelOutreachVideo_tvOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -164,6 +172,7 @@
 		D2767AA6ECF9AC8819158898 /* FeaturedManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeaturedManager.swift; sourceTree = "<group>"; };
 		D541D1C50347539E3BBBF692 /* CastManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CastManager.swift; sourceTree = "<group>"; };
 		E54B22376172037E8F9AA48B /* Shared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared.swift; sourceTree = "<group>"; };
+		E911BC137B356D7EF221459E /* ForceUpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForceUpdateService.swift; sourceTree = "<group>"; };
 		EBA064B1AF5891F6AC652546 /* AppNavigator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigator.swift; sourceTree = "<group>"; };
 		F287C5EA0C821E00E6654798 /* intro_splash.mp4 */ = {isa = PBXFileReference; path = intro_splash.mp4; sourceTree = "<group>"; };
 		F5E24BBD8FF9E929DDC68A28 /* PlaylistDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistDetailView.swift; sourceTree = "<group>"; };
@@ -222,11 +231,13 @@
 			isa = PBXGroup;
 			children = (
 				C69D01F2C33DBCAFA9788C80 /* AppleMusicService.swift */,
+				69EA392FA8C68A25E0C96640 /* AudioDownloadManager.swift */,
 				CF44774A7E29CBA566F7B616 /* AuthService.swift */,
 				3B831D5275942142F1361C54 /* AutoplayManager.swift */,
 				D541D1C50347539E3BBBF692 /* CastManager.swift */,
 				C2330CEFA36FEEF6C6AC5350 /* DeepLinkHandler.swift */,
 				D2767AA6ECF9AC8819158898 /* FeaturedManager.swift */,
+				E911BC137B356D7EF221459E /* ForceUpdateService.swift */,
 				BB6B5C3BB620AE83BE388385 /* LiveHLSProxy.swift */,
 				44B71939DC241AEFC04A95E9 /* LiveStreamManager.swift */,
 				646E57631B8B719E54844D3F /* MuxAPI.swift */,
@@ -296,6 +307,7 @@
 				4F212082C23E65755391A35E /* CategoryLibraryView.swift */,
 				6BB42A7C8E837D2D8F177E92 /* ContentView.swift */,
 				252BE56E919D458483EB5745 /* FeedbackView.swift */,
+				79685BD9EB484543EC21A89D /* ForceUpdateView.swift */,
 				1EB98D4E713668484DE5C7A0 /* HomeView.swift */,
 				5BD4BB34D3DA66E0357FBA38 /* IntroSplashView.swift */,
 				6CA6C9033A9513A86B6F38F2 /* KidsLibraryView.swift */,
@@ -447,6 +459,7 @@
 				332BC2A7DC0BAC497543561E /* AppNavigator.swift in Sources */,
 				2C0A932B9B6A1258C98074BA /* AppleMusicService.swift in Sources */,
 				A89A75277E9AA007E1BC24E5 /* AppleMusicView.swift in Sources */,
+				D8BA8BFA91F29D86EC974FA8 /* AudioDownloadManager.swift in Sources */,
 				6D0849175356ECC2B9DFA619 /* AuthService.swift in Sources */,
 				E5634F1468F1CA47BB23010F /* AutoplayManager.swift in Sources */,
 				7237D42BB0F9E8DF754487DD /* BrowseView.swift in Sources */,
@@ -457,6 +470,8 @@
 				0C01E4D8F2FA2DBE82323BC5 /* DeepLinkHandler.swift in Sources */,
 				466C17651CF896882A548C72 /* FeaturedManager.swift in Sources */,
 				26A43AD2CBA73C9B9533D083 /* FeedbackView.swift in Sources */,
+				12A93D5772617250437DD6EE /* ForceUpdateService.swift in Sources */,
+				597AEE31F5CC89036B080B9F /* ForceUpdateView.swift in Sources */,
 				7C30BAB0AADEA6EA0677E3A8 /* GospelOutreachTVApp.swift in Sources */,
 				72FC2B08F4ED1600EA84BBDD /* HomeView.swift in Sources */,
 				35DA88EF2CB623D6F207B819 /* IntroSplashView.swift in Sources */,
@@ -497,6 +512,7 @@
 				FB4E7405CD3B3E194DEF9460 /* AppNavigator.swift in Sources */,
 				1595DF7B19A332EA231DBF94 /* AppleMusicService.swift in Sources */,
 				26F8FD5D99003414EFED2E7B /* AppleMusicView.swift in Sources */,
+				631E19A89F9CB54FB61EB301 /* AudioDownloadManager.swift in Sources */,
 				186B314C7E51D486202EB1A4 /* AuthService.swift in Sources */,
 				831FC8449C0C26DDBB61C0DF /* AutoplayManager.swift in Sources */,
 				DF7CB206541F1AD967E989AA /* BrowseView.swift in Sources */,
@@ -507,6 +523,8 @@
 				1A7CC50D550568A3C55AE869 /* DeepLinkHandler.swift in Sources */,
 				7B95A09E219E8F8290E35605 /* FeaturedManager.swift in Sources */,
 				1DD88E221C40EE4FA682E998 /* FeedbackView.swift in Sources */,
+				39C6FB0035C9097ED69D5CED /* ForceUpdateService.swift in Sources */,
+				EFB7D1DBF7936A893BA67EE4 /* ForceUpdateView.swift in Sources */,
 				7D408BE1AA52D3922A2B9116 /* GospelOutreachTVApp.swift in Sources */,
 				CB5A8B050FCAD13F8B155DDB /* HomeView.swift in Sources */,
 				5056555187B35A2163CA407C /* IntroSplashView.swift in Sources */,
@@ -547,7 +565,7 @@
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_ENTITLEMENTS = "Sources/GospelOutreach-tvOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 57;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Sources/Info-tvOS.plist";
@@ -556,7 +574,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6.2;
+				MARKETING_VERSION = 1.6.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gospeloutreacholympia.tv;
 				SDKROOT = appletvos;
 				TARGETED_DEVICE_FAMILY = 3;
@@ -635,7 +653,7 @@
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_ENTITLEMENTS = "Sources/GospelOutreach-tvOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 57;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Sources/Info-tvOS.plist";
@@ -644,7 +662,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6.2;
+				MARKETING_VERSION = 1.6.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gospeloutreacholympia.tv;
 				SDKROOT = appletvos;
 				TARGETED_DEVICE_FAMILY = 3;
@@ -659,7 +677,7 @@
 				CODE_SIGN_ENTITLEMENTS = Sources/GospelOutreach.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 57;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Sources/Info.plist;
@@ -672,7 +690,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6.2;
+				MARKETING_VERSION = 1.6.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gospeloutreacholympia.tv;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -743,7 +761,7 @@
 				CODE_SIGN_ENTITLEMENTS = Sources/GospelOutreach.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 57;
+				CURRENT_PROJECT_VERSION = 62;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Sources/Info.plist;
@@ -756,7 +774,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6.2;
+				MARKETING_VERSION = 1.6.7;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gospeloutreacholympia.tv;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";

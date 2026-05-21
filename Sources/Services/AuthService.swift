@@ -19,6 +19,7 @@ class AuthService: ObservableObject {
     @Published var hasPrivateAccess = false
 
     private var authListener: AuthStateDidChangeListenerHandle?
+    private var blockListener: ListenerRegistration?
 
     init() {
         authListener = Auth.auth().addStateDidChangeListener { [weak self] _, user in
@@ -30,10 +31,27 @@ class AuthService: ObservableObject {
                 if wasNil { self?.recordSignupIfNew(user) }
                 // Check private content access
                 self?.refreshPrivateAccess(uid: user.uid)
+                // Listen for block flag — instant kick if admin blocks this user
+                self?.listenForBlock(uid: user.uid)
             } else {
                 self?.hasPrivateAccess = false
+                self?.blockListener?.remove()
+                self?.blockListener = nil
             }
         }
+    }
+
+    /// Real-time listener on users/{uid} — signs out immediately if blocked.
+    private func listenForBlock(uid: String) {
+        blockListener?.remove()
+        blockListener = Firestore.firestore()
+            .collection("users").document(uid)
+            .addSnapshotListener { [weak self] snap, _ in
+                guard let data = snap?.data(),
+                      data["blocked"] as? Bool == true else { return }
+                // Force sign-out
+                self?.signOut()
+            }
     }
 
     /// Write to newSignups/{uid} if this user hasn't been recorded yet.

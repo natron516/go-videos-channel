@@ -2,10 +2,19 @@ import SwiftUI
 
 /// In-memory + disk-cached image loader that replaces AsyncImage.
 /// Images persist across navigation so thumbnails appear instantly on revisit.
+/// Supports an optional `fallbackURL` — if the primary URL fails or returns
+/// an error status, the fallback is tried automatically.
 struct CachedAsyncImage<Placeholder: View>: View {
     let url: URL?
+    let fallbackURL: URL?
     @ViewBuilder let placeholder: () -> Placeholder
     @State private var image: UIImage?
+
+    init(url: URL?, fallbackURL: URL? = nil, @ViewBuilder placeholder: @escaping () -> Placeholder) {
+        self.url = url
+        self.fallbackURL = fallbackURL
+        self.placeholder = placeholder
+    }
 
     var body: some View {
         Group {
@@ -21,32 +30,44 @@ struct CachedAsyncImage<Placeholder: View>: View {
     }
 
     private func load() async {
-        guard let url else { return }
+        // Try primary URL first
+        if let url, let img = await fetchImage(url) {
+            self.image = img
+            return
+        }
+        // Try fallback URL if primary failed
+        if let fallbackURL, let img = await fetchImage(fallbackURL) {
+            self.image = img
+            return
+        }
+    }
+
+    private func fetchImage(_ url: URL) async -> UIImage? {
         // Check memory cache
         if let cached = ImageCache.shared.get(url) {
-            self.image = cached
-            return
+            return cached
         }
         // Check disk cache via URLCache
         let request = URLRequest(url: url)
         if let data = URLCache.thumbnailCache.cachedResponse(for: request)?.data,
            let img = UIImage(data: data) {
             ImageCache.shared.set(img, for: url)
-            self.image = img
-            return
+            return img
         }
         // Network fetch
         do {
             let (data, response) = try await URLSession.thumbnailSession.data(for: request)
-            guard let img = UIImage(data: data) else { return }
-            // Store in disk cache
+            // Check for HTTP error status
+            if let http = response as? HTTPURLResponse, http.statusCode >= 400 {
+                return nil
+            }
+            guard let img = UIImage(data: data) else { return nil }
             let cached = CachedURLResponse(response: response, data: data)
             URLCache.thumbnailCache.storeCachedResponse(cached, for: request)
-            // Store in memory cache
             ImageCache.shared.set(img, for: url)
-            self.image = img
+            return img
         } catch {
-            // Silently fail — placeholder stays visible
+            return nil
         }
     }
 }

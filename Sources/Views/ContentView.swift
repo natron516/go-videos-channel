@@ -330,9 +330,19 @@ struct TVContentView: View {
                 try? await Task.sleep(nanoseconds: 30_000_000_000)
             }
         }
+        .onAppear {
+            PinUnlockManager.shared.validateUnlock { valid in
+                DispatchQueue.main.async { sermonUnlocked = valid }
+            }
+        }
         .onChange(of: selection) { _ in
             navPath = NavigationPath()
-            // sermonUnlocked intentionally NOT reset — PIN is once per session
+            // Re-validate PIN when switching to sermons (catches admin PIN changes)
+            if selection == .sermons {
+                PinUnlockManager.shared.validateUnlock { valid in
+                    DispatchQueue.main.async { sermonUnlocked = valid }
+                }
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: AppNavigator.navigateToSermonsNotification)) { _ in
             selection = .sermons

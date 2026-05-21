@@ -9,6 +9,7 @@ struct SermonLibraryView: View {
     #endif
     @State private var addToPlaylistAssetId: String?
     @State private var showAddToPlaylist = false
+    @ObservedObject private var audioDownloader = AudioDownloadManager.shared
     #if !os(tvOS)
     @State private var showLinkTV = false
     @State private var showWatchTimer = false
@@ -19,7 +20,7 @@ struct SermonLibraryView: View {
         #if os(tvOS)
         return Array(repeating: GridItem(.flexible(), spacing: 24), count: 4)
         #else
-        return UIDevice.current.userInterfaceIdiom == .pad ? Array(repeating: GridItem(.flexible(), spacing: 20), count: 3) : Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
+        return UIDevice.current.userInterfaceIdiom == .pad ? Array(repeating: GridItem(.flexible(), spacing: 20), count: 4) : Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
         #endif
     }
 
@@ -59,6 +60,35 @@ struct SermonLibraryView: View {
                             .padding(.vertical, 10)
                         #endif
 
+                        #if !os(tvOS)
+                        if audioDownloader.isDownloading {
+                            HStack(spacing: 10) {
+                                ProgressView()
+                                    .tint(.white)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Downloading audio…")
+                                        .font(.caption.bold())
+                                        .foregroundColor(.white)
+                                    ProgressView(value: audioDownloader.progress)
+                                        .tint(.yellow)
+                                }
+                                Spacer()
+                                Button {
+                                    audioDownloader.cancel()
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.white.opacity(0.7))
+                                        .font(.title3)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(12)
+                            .background(RoundedRectangle(cornerRadius: 10).fill(Color.accentColor.opacity(0.8)))
+                            .padding(.horizontal, 4)
+                            .padding(.bottom, 8)
+                        }
+                        #endif
+
                         LazyVGrid(columns: columns, spacing: 16) {
                             ForEach(assets) { asset in
                                 Button {
@@ -86,6 +116,14 @@ struct SermonLibraryView: View {
                                         ) {
                                             Label("Share", systemImage: "square.and.arrow.up")
                                         }
+                                    }
+                                    if asset.streamURL != nil {
+                                        Button {
+                                            AudioDownloadManager.shared.downloadAudio(asset: asset)
+                                        } label: {
+                                            Label("Download Audio", systemImage: "waveform.and.arrow.down")
+                                        }
+                                        .disabled(AudioDownloadManager.shared.isDownloading)
                                     }
                                     if CastManager.shared.isConnected, let url = asset.streamURL {
                                         Button {
@@ -131,6 +169,13 @@ struct SermonLibraryView: View {
           }
           #endif
         } // end ZStack
+        #if !os(tvOS)
+        .onAppear {
+            PinUnlockManager.shared.validateUnlock { valid in
+                DispatchQueue.main.async { isUnlocked = valid }
+            }
+        }
+        #endif
     }
 
     func load() async {
@@ -171,7 +216,7 @@ struct SermonCardView: View {
                     #endif
                 }(), contentMode: .fit)
                 .overlay(
-                    CachedAsyncImage(url: featured ? asset.featuredThumbnailURL : asset.thumbnailURL) {
+                    CachedAsyncImage(url: featured ? asset.featuredThumbnailURL : asset.thumbnailURL, fallbackURL: asset.fallbackThumbnailURL) {
                         Rectangle()
                             .fill(Color.gray.opacity(0.3))
                             .overlay(Image(systemName: "play.circle").font(.largeTitle).foregroundColor(.white))
@@ -192,21 +237,39 @@ struct SermonCardView: View {
                 }
 
             Text(asset.title)
-                .font(featured ? .title3.bold() : .caption.bold())
+                .font(featured ? .title3.bold() : {
+                    #if os(tvOS)
+                    return Font.caption.bold()
+                    #else
+                    return UIDevice.current.userInterfaceIdiom == .pad ? Font.system(size: 17, weight: .bold) : Font.system(size: 14, weight: .bold)
+                    #endif
+                }())
                 .lineLimit(2)
-                .multilineTextAlignment(featured ? .center : .leading)
-                .frame(maxWidth: .infinity, alignment: featured ? .center : .leading)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity)
                 .foregroundColor(.primary)
 
             HStack(spacing: 4) {
                 if let date = asset.formattedDate {
-                    Text(date).font(featured ? .caption : .caption2).foregroundColor(.secondary)
+                    Text(date).font(featured ? .caption : {
+                        #if os(tvOS)
+                        return Font.caption2
+                        #else
+                        return UIDevice.current.userInterfaceIdiom == .pad ? Font.system(size: 11) : Font.system(size: 10)
+                        #endif
+                    }()).foregroundColor(.secondary)
                 }
                 if let duration = asset.duration {
-                    Text("· \(formatDuration(duration))").font(featured ? .caption : .caption2).foregroundColor(.secondary)
+                    Text("· \(formatDuration(duration))").font(featured ? .caption : {
+                        #if os(tvOS)
+                        return Font.caption2
+                        #else
+                        return UIDevice.current.userInterfaceIdiom == .pad ? Font.system(size: 11) : Font.system(size: 10)
+                        #endif
+                    }()).foregroundColor(.secondary)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: featured ? .center : .leading)
+            .frame(maxWidth: .infinity)
 
             Spacer(minLength: 0)
         }

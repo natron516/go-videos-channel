@@ -65,8 +65,8 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown"
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortraitUpsideDown"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
-        MARKETING_VERSION: "1.6.2"
-        CURRENT_PROJECT_VERSION: "57"
+        MARKETING_VERSION: "1.6.7"
+        CURRENT_PROJECT_VERSION: "62"
     scheme:
       testTargets: []
 
@@ -101,7 +101,7 @@ targets:
         INFOPLIST_FILE: Sources/Info-tvOS.plist
         INFOPLIST_KEY_CFBundleDisplayName: "GO Media"
         ASSETCATALOG_COMPILER_APPICON_NAME: "App Icon & Top Shelf Image"
-        MARKETING_VERSION: "1.6.2"
-        CURRENT_PROJECT_VERSION: "57"
+        MARKETING_VERSION: "1.6.7"
+        CURRENT_PROJECT_VERSION: "62"
     scheme:
       testTargets: []

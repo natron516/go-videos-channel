@@ -149,6 +149,15 @@ func presentPlayer(url: URL, autoplay: Bool = false, asset: MuxAsset? = nil) {
 
     MuxAnalytics.monitor(vc: vc, name: "main", url: url, asset: asset)
 
+    // Track what user is currently watching
+    let watchTitle: String
+    if isLiveAsset {
+        watchTitle = "Live: \(asset?.title ?? "Livestream")"
+    } else {
+        watchTitle = asset?.title ?? "Unknown"
+    }
+    SessionTracker.shared.startWatching(title: watchTitle, assetId: asset?.id ?? "")
+
     guard let root = UIApplication.shared.connectedScenes
         .compactMap({ $0 as? UIWindowScene })
         .first?.windows.first?.rootViewController else { return }
@@ -162,17 +171,18 @@ func presentPlayer(url: URL, autoplay: Bool = false, asset: MuxAsset? = nil) {
     if autoplay, top is AVPlayerViewController {
         top.dismiss(animated: false) {
             MuxAnalytics.destroy(playerName: "main")
-            presentPlayerFresh(vc: vc, player: player, from: root)
+            SessionTracker.shared.stopWatching()
+            presentPlayerFresh(vc: vc, player: player, from: root, isLive: isLiveAsset, liveStreamId: asset?.live_stream_id, assetId: asset?.id)
         }
     } else {
-        presentPlayerFresh(vc: vc, player: player, from: top)
+        presentPlayerFresh(vc: vc, player: player, from: top, isLive: isLiveAsset, liveStreamId: asset?.live_stream_id, assetId: asset?.id)
     }
 }
 
 private var sessionURL: URL?
 private var sessionTitle: String?
 
-private func presentPlayerFresh(vc: AVPlayerViewController, player: AVPlayer, from presenter: UIViewController) {
+private func presentPlayerFresh(vc: AVPlayerViewController, player: AVPlayer, from presenter: UIViewController, isLive: Bool = false, liveStreamId: String? = nil, assetId: String? = nil) {
     // Save position periodically while playing
     let progressObserver = player.addPeriodicTimeObserver(
         forInterval: CMTime(seconds: 5, preferredTimescale: 600),
@@ -233,6 +243,7 @@ func dismissTopPlayer() {
         // Save position before dismissing
         ActivePlayerSession.shared.saveAndClear()
         MuxAnalytics.destroy(playerName: "main")
+        SessionTracker.shared.stopWatching()
         top.dismiss(animated: true)
     }
 }
@@ -357,6 +368,8 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
     private weak var shareBtn: UIButton?
     private weak var castBtn: GCKUICastButton?
     private weak var pillView: UIVisualEffectView?
+    private weak var shareFab: UIButton?
+    private weak var shareFabBg: UIVisualEffectView?
     private var hideTimer: Timer?
     private var dismissTimer: Timer?
     private var buttonWindow: UIWindow?
@@ -389,16 +402,7 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         container.addSubview(pill)
         self.pillView = pill
 
-        // Share
-        let share = UIButton(type: .system)
-        share.setImage(UIImage(systemName: "square.and.arrow.up"), for: .normal)
-        share.tintColor = .white
-        share.translatesAutoresizingMaskIntoConstraints = false
-        share.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
-        pill.contentView.addSubview(share)
-        self.shareBtn = share
-
-        // Cast
+        // Cast (stays in top pill)
         let cast = GCKUICastButton(frame: .zero)
         cast.tintColor = .white
         cast.translatesAutoresizingMaskIntoConstraints = false
@@ -406,20 +410,48 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         self.castBtn = cast
 
         NSLayoutConstraint.activate([
-            // Buttons inside pill
-            share.leadingAnchor.constraint(equalTo: pill.contentView.leadingAnchor, constant: 8),
-            share.centerYAnchor.constraint(equalTo: pill.contentView.centerYAnchor),
-            share.widthAnchor.constraint(equalToConstant: 36),
-            share.heightAnchor.constraint(equalToConstant: 36),
-            cast.leadingAnchor.constraint(equalTo: share.trailingAnchor, constant: 4),
+            // Cast button inside pill
+            cast.leadingAnchor.constraint(equalTo: pill.contentView.leadingAnchor, constant: 8),
             cast.trailingAnchor.constraint(equalTo: pill.contentView.trailingAnchor, constant: -8),
             cast.centerYAnchor.constraint(equalTo: pill.contentView.centerYAnchor),
             cast.widthAnchor.constraint(equalToConstant: 36),
             cast.heightAnchor.constraint(equalToConstant: 36),
-            // Pill position: top-leading, right after the native Done button pill (~100px wide)
+            // Pill position: top-leading
             pill.topAnchor.constraint(equalTo: container.safeAreaLayoutGuide.topAnchor, constant: -2),
-            pill.leadingAnchor.constraint(equalTo: container.safeAreaLayoutGuide.leadingAnchor, constant: UIDevice.current.userInterfaceIdiom == .pad ? 180 : 140),
+            pill.leadingAnchor.constraint(equalTo: container.safeAreaLayoutGuide.leadingAnchor, constant: UIDevice.current.userInterfaceIdiom == .pad ? 180 : 220),
             pill.heightAnchor.constraint(equalToConstant: 44),
+        ])
+
+        // Floating share FAB — small round button above the timeline
+        let fabSize: CGFloat = 40
+        let fabBg = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
+        fabBg.clipsToBounds = true
+        fabBg.layer.cornerRadius = fabSize / 2
+        fabBg.translatesAutoresizingMaskIntoConstraints = false
+        container.addSubview(fabBg)
+        self.shareFabBg = fabBg
+
+        let fab = UIButton(type: .system)
+        fab.setImage(UIImage(systemName: "square.and.arrow.up")?.withConfiguration(
+            UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
+        ), for: .normal)
+        fab.tintColor = .white
+        fab.translatesAutoresizingMaskIntoConstraints = false
+        fab.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
+        fabBg.contentView.addSubview(fab)
+        self.shareFab = fab
+        self.shareBtn = fab  // keep reference for popover sourceView
+
+        let bottomPad: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 56 : 48
+        NSLayoutConstraint.activate([
+            fabBg.widthAnchor.constraint(equalToConstant: fabSize),
+            fabBg.heightAnchor.constraint(equalToConstant: fabSize),
+            fabBg.trailingAnchor.constraint(equalTo: container.safeAreaLayoutGuide.trailingAnchor, constant: -16),
+            fabBg.bottomAnchor.constraint(equalTo: container.safeAreaLayoutGuide.bottomAnchor, constant: -bottomPad),
+            fab.centerXAnchor.constraint(equalTo: fabBg.contentView.centerXAnchor),
+            fab.centerYAnchor.constraint(equalTo: fabBg.contentView.centerYAnchor),
+            fab.widthAnchor.constraint(equalToConstant: fabSize),
+            fab.heightAnchor.constraint(equalToConstant: fabSize),
         ])
 
         // Show/hide in sync with player controls
@@ -461,8 +493,9 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
 
     private func showButtons() {
         pillView?.alpha = 1
-        shareBtn?.alpha = 1
         castBtn?.alpha = 1
+        shareFabBg?.alpha = 1
+        shareFab?.alpha = 1
     }
 
     private func scheduleHide() {
@@ -470,8 +503,9 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         hideTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
             UIView.animate(withDuration: 0.3) {
                 self?.pillView?.alpha = 0
-                self?.shareBtn?.alpha = 0
                 self?.castBtn?.alpha = 0
+                self?.shareFabBg?.alpha = 0
+                self?.shareFab?.alpha = 0
             }
         }
     }
@@ -621,3 +655,4 @@ struct WatchTimerOverlayView: View {
         }
     }
 }
+

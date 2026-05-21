@@ -11,9 +11,10 @@ struct MuxAsset: Identifiable, Decodable {
     let passthrough: String? // category tag ("sermon", "children", "music", "performance")
     let meta: MuxAssetMeta?
     let createdAt: String?
+    let live_stream_id: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, status, duration, passthrough, meta
+        case id, status, duration, passthrough, meta, live_stream_id
         case playbackIds = "playback_ids"
         case createdAt = "created_at"
     }
@@ -40,24 +41,52 @@ struct MuxAsset: Identifiable, Decodable {
         return comps.url ?? stream
     }
 
-    var thumbnailURL: URL? {
-        // Use custom thumbnail from passthrough JSON if set
-        if let custom = passthroughJSON?["thumbnail"], let url = URL(string: custom) {
-            return url
-        }
+    /// Mux auto-generated thumbnail (always available if playbackId exists).
+    var muxThumbnailURL: URL? {
         guard let pid = playbackId else { return nil }
         #if os(tvOS)
         let w = 480
         #else
         let w = UIDevice.current.userInterfaceIdiom == .pad ? 400 : 320
         #endif
-        return URL(string: "https://image.mux.com/\(pid)/thumbnail.jpg?width=\(w)&time=10")
+        let stableHash = id.unicodeScalars.reduce(0) { ($0 &* 31) &+ Int($1.value) }
+        let isSermon = category == "sermon"
+        let t: Int
+        if isSermon, let duration = duration, duration > 30 * 60 {
+            let startSec = 17 * 60
+            let endSec   = 27 * 60
+            let range = endSec - startSec
+            t = startSec + (abs(stableHash) % range)
+        } else if let duration = duration, duration > 0 {
+            let start = duration * 0.10
+            let end   = duration * 0.80
+            let range = max(Int(end - start), 1)
+            t = Int(start) + (abs(stableHash) % range)
+        } else {
+            t = 10
+        }
+        return URL(string: "https://image.mux.com/\(pid)/thumbnail.jpg?width=\(w)&time=\(t)")
+    }
+
+    /// Primary thumbnail: custom if set, otherwise Mux auto-generated.
+    var thumbnailURL: URL? {
+        if let custom = passthroughJSON?["thumbnail"], let url = URL(string: custom) {
+            return url
+        }
+        return muxThumbnailURL
+    }
+
+    /// Fallback thumbnail if primary (custom) fails to load.
+    var fallbackThumbnailURL: URL? {
+        // Only useful when there's a custom thumbnail to fall back from
+        guard passthroughJSON?["thumbnail"] != nil else { return nil }
+        return muxThumbnailURL
     }
 
     /// For featured cards: rotates to a different video frame every 4 hours.
     /// Falls back to custom thumbnail if one is set (never rotates those).
     var featuredThumbnailURL: URL? {
-        // Custom thumbnail always wins — no rotation
+        // Custom thumbnail wins — no rotation (fallback handled by CachedAsyncImage)
         if let custom = passthroughJSON?["thumbnail"], let url = URL(string: custom) {
             return url
         }
