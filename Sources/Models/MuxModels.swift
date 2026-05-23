@@ -65,7 +65,7 @@ struct MuxAsset: Identifiable, Decodable {
         } else {
             t = 10
         }
-        return URL(string: "https://image.mux.com/\(pid)/thumbnail.jpg?width=\(w)&time=\(t)")
+        return URL(string: "https://image.mux.com/\(pid)/thumbnail.webp?width=\(w)&time=\(t)")
     }
 
     /// Primary thumbnail: custom if set, otherwise Mux auto-generated.

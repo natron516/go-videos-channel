@@ -74,29 +74,35 @@ struct CachedAsyncImage<Placeholder: View>: View {
 
 // MARK: - Prefetch helper
 /// Call with a list of thumbnail URLs to eagerly cache them all in the background.
+/// Uses concurrent task groups for faster parallel downloads.
 func prefetchThumbnails(_ urls: [URL?]) {
-    for case let url? in urls {
-        guard ImageCache.shared.get(url) == nil else { continue }
-        Task.detached(priority: .utility) {
-            let request = URLRequest(url: url)
-            // Disk hit?
-            if let data = URLCache.thumbnailCache.cachedResponse(for: request)?.data,
-               let img = UIImage(data: data) {
-                ImageCache.shared.set(img, for: url)
-                return
+    let uncached = urls.compactMap { $0 }.filter { ImageCache.shared.get($0) == nil }
+    guard !uncached.isEmpty else { return }
+    Task.detached(priority: .utility) {
+        await withTaskGroup(of: Void.self) { group in
+            for url in uncached {
+                group.addTask {
+                    let request = URLRequest(url: url)
+                    // Disk hit?
+                    if let data = URLCache.thumbnailCache.cachedResponse(for: request)?.data,
+                       let img = UIImage(data: data) {
+                        await ImageCache.shared.set(img, for: url)
+                        return
+                    }
+                    // Network
+                    guard let (data, response) = try? await URLSession.thumbnailSession.data(for: request),
+                          let img = UIImage(data: data) else { return }
+                    let cached = CachedURLResponse(response: response, data: data)
+                    URLCache.thumbnailCache.storeCachedResponse(cached, for: request)
+                    await ImageCache.shared.set(img, for: url)
+                }
             }
-            // Network
-            guard let (data, response) = try? await URLSession.thumbnailSession.data(for: request),
-                  let img = UIImage(data: data) else { return }
-            let cached = CachedURLResponse(response: response, data: data)
-            URLCache.thumbnailCache.storeCachedResponse(cached, for: request)
-            ImageCache.shared.set(img, for: url)
         }
     }
 }
 
-// MARK: - Memory cache (NSCache)
-final class ImageCache {
+// MARK: - Memory cache (NSCache) — thread-safe via NSCache internals
+final class ImageCache: @unchecked Sendable {
     static let shared = ImageCache()
     private let cache = NSCache<NSURL, UIImage>()
 
@@ -131,6 +137,8 @@ extension URLSession {
         let config = URLSessionConfiguration.default
         config.urlCache = URLCache.thumbnailCache
         config.requestCachePolicy = .returnCacheDataElseLoad
+        config.httpMaximumConnectionsPerHost = 8
+        config.timeoutIntervalForRequest = 15
         return URLSession(configuration: config)
     }()
 }
