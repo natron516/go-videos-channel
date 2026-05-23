@@ -359,7 +359,7 @@ func addPlayerButtons(to vc: UIViewController) {
     objc_setAssociatedObject(vc.view, &PlayerButtonsManager.managerKey, manager, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
 }
 
-private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate {
+private final class PlayerButtonsManager: NSObject {
     static var managerKey = "playerButtonsManager"
 
     private weak var vc: UIViewController?
@@ -371,11 +371,12 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
     private var dismissTimer: Timer?
     private var buttonWindow: UIWindow?
 
-    // Timebar horizontal bounds (points from screen edges)
-    private let timebarInsetLeft: CGFloat = 66
-    private let timebarInsetRight: CGFloat = 66
-    // Timebar vertical position from bottom of screen
-    private let timebarBottomOffset: CGFloat = 28
+    // Timebar progress track insets (points from screen edges).
+    // Measured from iPhone AVPlayerViewController: the scrubber track starts
+    // after the elapsed-time label and ends before the remaining-time label.
+    private let trackInsetLeft: CGFloat = 76
+    private let trackInsetRight: CGFloat = 76
+    private var visibilityPoller: Timer?
 
     init(vc: UIViewController) {
         self.vc = vc
@@ -405,18 +406,20 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         self.bookmarkView = bookmark
         self.shareBtn = bookmark
 
-        let centerX = bookmark.centerXAnchor.constraint(equalTo: container.leadingAnchor, constant: timebarInsetLeft)
+        let centerX = bookmark.centerXAnchor.constraint(equalTo: container.leadingAnchor, constant: trackInsetLeft)
         self.bookmarkCenterX = centerX
 
         // Bottom tip sits just above the top edge of the timebar capsule
-        // iPhone: capsule top is ~78pt from screen bottom; iPad: ~60pt
-        let aboveTimebar: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 62 : 80
+        let aboveTimebar: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 62 : 82
         NSLayoutConstraint.activate([
             bookmark.widthAnchor.constraint(equalToConstant: 26),
             bookmark.heightAnchor.constraint(equalToConstant: 32),
             bookmark.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -aboveTimebar),
             centerX,
         ])
+
+        // Start hidden — visibility poller will show it when controls appear
+        bookmark.alpha = 0
 
         // Periodic observer to move bookmark with playhead
         if let playerVC = vc as? AVPlayerViewController, let player = playerVC.player {
@@ -426,20 +429,16 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
             }
         }
 
-        // Show/hide in sync with player controls
-        vc.view.gestureRecognizers?.forEach { $0.cancelsTouchesInView = false }
-        let tap = UITapGestureRecognizer(target: self, action: #selector(handlePlayerTap))
-        tap.cancelsTouchesInView = false
-        tap.delegate = self
-        vc.view.addGestureRecognizer(tap)
+        // Poll native control visibility every 0.2s — perfectly tracks show/hide
+        visibilityPoller = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { [weak self] _ in
+            self?.syncVisibilityWithNativeControls()
+        }
 
         // Tear down window when player is dismissed
         dismissTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self, weak vc] t in
             guard let self else { t.invalidate(); return }
             if vc?.view.window == nil { self.tearDown(); t.invalidate() }
         }
-
-        scheduleHide()
     }
 
     private func updateBookmarkPosition(player: AVPlayer) {
@@ -451,53 +450,74 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         let progress = min(max(cur / dur, 0), 1)
 
         let screenW = container.bounds.width
-        let leftEdge = timebarInsetLeft
-        let rightEdge = screenW - timebarInsetRight
+        let leftEdge = trackInsetLeft
+        let rightEdge = screenW - trackInsetRight
         let trackWidth = rightEdge - leftEdge
         let x = leftEdge + trackWidth * progress
 
         bookmarkCenterX?.constant = x
     }
 
-    // MARK: Visibility — mirrors native player control show/hide timing
-    // Native AVKit controls: appear on tap, auto-hide after ~5s of no interaction.
-    // We match that exact cycle.
+    // MARK: Visibility — directly observes native controls, never drifts
 
-    private var controlsVisible = true
-
-    private func showButtons() {
-        controlsVisible = true
-        UIView.animate(withDuration: 0.2) { self.bookmarkView?.alpha = 1 }
-    }
-
-    private func hideButtons() {
-        controlsVisible = false
-        UIView.animate(withDuration: 0.3) { self.bookmarkView?.alpha = 0 }
-    }
-
-    /// Start the auto-hide cycle (matches native ~5s timeout)
-    private func scheduleHide() {
-        hideTimer?.invalidate()
-        hideTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { [weak self] _ in
-            self?.hideButtons()
+    /// Walk the view tree and find the effective alpha of the native transport controls.
+    /// We look for UIButton instances (close, play/pause, skip) and check their
+    /// effective visibility. This cannot get out of sync because we read the
+    /// actual state every 0.2s.
+    private func syncVisibilityWithNativeControls() {
+        guard let vc = vc else { return }
+        let nativeAlpha = effectiveControlAlpha(in: vc.view)
+        let shouldShow = nativeAlpha > 0.5
+        let current = (bookmarkView?.alpha ?? 0) > 0.5
+        if shouldShow != current {
+            UIView.animate(withDuration: 0.2) {
+                self.bookmarkView?.alpha = shouldShow ? 1 : 0
+            }
         }
     }
 
-    /// Called on each tap — toggle controls just like native player does
+    /// Find the alpha of the native playback controls by looking for
+    /// any container whose children include multiple UIButtons (the X, play, skip buttons).
+    /// Returns the alpha of that container, or 1.0 as default.
+    private func effectiveControlAlpha(in view: UIView) -> CGFloat {
+        // Check if this view is a controls container: has 2+ UIButton descendants at shallow depth
+        // and is a direct child of the player view
+        for sub in view.subviews {
+            let className = NSStringFromClass(type(of: sub))
+            // AVKit uses views with "Playback" or "Transport" or "Controls" in the name
+            if className.contains("layback") || className.contains("ransport") || className.contains("ontrol") {
+                return sub.alpha
+            }
+            // Recurse one level deeper
+            for sub2 in sub.subviews {
+                let cn2 = NSStringFromClass(type(of: sub2))
+                if cn2.contains("layback") || cn2.contains("ransport") || cn2.contains("ontrol") {
+                    return sub2.alpha
+                }
+            }
+        }
+        // Fallback: check if the X close button (top-left UIButton) is visible
+        if let btn = findFirstButton(in: view) {
+            return btn.alpha * (btn.superview?.alpha ?? 1)
+        }
+        return 1.0
+    }
+
+    private func findFirstButton(in view: UIView) -> UIButton? {
+        if let btn = view as? UIButton { return btn }
+        for sub in view.subviews {
+            if let btn = findFirstButton(in: sub) { return btn }
+        }
+        return nil
+    }
+
     private func showAndKeep() {
-        if controlsVisible {
-            // Controls are showing — tap hides them (native behavior)
-            hideTimer?.invalidate()
-            hideButtons()
-        } else {
-            // Controls are hidden — tap shows them + starts auto-hide timer
-            showButtons()
-            scheduleHide()
-        }
+        // No-op — visibility is entirely driven by the poller now
     }
 
     private func tearDown() {
         hideTimer?.invalidate()
+        visibilityPoller?.invalidate()
         dismissTimer?.invalidate()
         if let obs = timeObserver, let playerVC = vc as? AVPlayerViewController {
             playerVC.player?.removeTimeObserver(obs)
@@ -506,8 +526,6 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         buttonWindow?.isHidden = true
         buttonWindow = nil
     }
-
-    @objc private func handlePlayerTap() { showAndKeep() }
 
     // MARK: Share action
 
@@ -538,13 +556,6 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         let activityVC = UIActivityViewController(activityItems: [message, shareURL], applicationActivities: nil)
         activityVC.popoverPresentationController?.sourceView = shareBtn
         vc.present(activityVC, animated: true)
-    }
-
-    // MARK: UIGestureRecognizerDelegate
-
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
-                           shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
-        return true
     }
 }
 
