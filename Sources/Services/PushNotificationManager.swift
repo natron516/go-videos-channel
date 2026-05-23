@@ -12,6 +12,8 @@ class PushNotificationManager: NSObject, ObservableObject, UNUserNotificationCen
     static let shared = PushNotificationManager()
 
     @Published var isRegistered = false
+    /// Stores notification payload when app is launched from killed state
+    var pendingNotificationPayload: [AnyHashable: Any]?
 
     override init() {
         super.init()
@@ -66,6 +68,32 @@ class PushNotificationManager: NSObject, ObservableObject, UNUserNotificationCen
         }
     }
 
+    /// Process any pending notification from cold launch
+    func processPendingNotification() {
+        guard let userInfo = pendingNotificationPayload else { return }
+        pendingNotificationPayload = nil
+        print("[Push] Processing pending notification: \(userInfo)")
+
+        let playbackId = userInfo["playbackId"] as? String
+        let assetId = userInfo["assetId"] as? String
+
+        if let pid = playbackId, !pid.isEmpty {
+            let streamURL = URL(string: "https://stream.mux.com/\(pid).m3u8")!
+            let asset = MuxAsset.stub(playbackId: pid, title: nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                presentPlayer(url: streamURL, asset: asset)
+            }
+        } else if let aid = assetId, !aid.isEmpty {
+            Task { @MainActor in
+                let allAssets = (try? await MuxAPI.shared.fetchAllAssets()) ?? []
+                if let asset = allAssets.first(where: { $0.id == aid }),
+                   let url = asset.streamURL {
+                    presentPlayer(url: url, asset: asset)
+                }
+            }
+        }
+    }
+
     // MARK: - MessagingDelegate
 
     func messaging(_ messaging: Messaging, didReceiveRegistrationToken fcmToken: String?) {
@@ -103,12 +131,36 @@ class PushNotificationManager: NSObject, ObservableObject, UNUserNotificationCen
         completionHandler([.banner, .badge, .sound])
     }
 
-    /// Handle notification tap
+    /// Handle notification tap — deep link to the notified video
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse,
                                 withCompletionHandler completionHandler: @escaping () -> Void) {
         let userInfo = response.notification.request.content.userInfo
         print("[Push] Notification tapped: \(userInfo)")
+
+        // Extract playback ID or asset ID from the notification data
+        let playbackId = userInfo["playbackId"] as? String
+        let assetId = userInfo["assetId"] as? String
+        let title = response.notification.request.content.title
+
+        if let pid = playbackId, !pid.isEmpty {
+            // We have a playback ID — go straight to the video
+            let streamURL = URL(string: "https://stream.mux.com/\(pid).m3u8")!
+            let asset = MuxAsset.stub(playbackId: pid, title: title)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                presentPlayer(url: streamURL, asset: asset)
+            }
+        } else if let aid = assetId, !aid.isEmpty {
+            // We have an asset ID — look it up from the API then play
+            Task { @MainActor in
+                let allAssets = (try? await MuxAPI.shared.fetchAllAssets()) ?? []
+                if let asset = allAssets.first(where: { $0.id == aid }),
+                   let url = asset.streamURL {
+                    presentPlayer(url: url, asset: asset)
+                }
+            }
+        }
+
         completionHandler()
     }
 }

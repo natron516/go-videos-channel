@@ -7,6 +7,14 @@ class AppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         _ = PushNotificationManager.shared
+
+        // If the app was launched by tapping a notification (cold start),
+        // store the payload so the notification delegate can handle it
+        if let remoteNotification = launchOptions?[.remoteNotification] as? [AnyHashable: Any] {
+            print("[Push] App launched from notification: \(remoteNotification)")
+            PushNotificationManager.shared.pendingNotificationPayload = remoteNotification
+        }
+
         return true
     }
 

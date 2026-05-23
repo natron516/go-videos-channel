@@ -32,6 +32,8 @@ struct GospelOutreachTVApp: App {
                 .onAppear {
                     #if os(iOS)
                     PushNotificationManager.shared.requestPermission()
+                    // Handle notification that launched the app from killed state
+                    PushNotificationManager.shared.processPendingNotification()
                     clearBadge()
                     #endif
                 }
