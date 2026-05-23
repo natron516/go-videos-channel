@@ -101,14 +101,21 @@ struct PlaylistDetailView: View {
         .navigationTitle(playlist?.name ?? "Playlist")
         .toolbar {
             #if !os(tvOS)
-            ToolbarItem(placement: .automatic) {
+            ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     sharePlaylist()
                 } label: {
                     Image(systemName: "square.and.arrow.up")
                 }
             }
-            #endif
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(role: .destructive) {
+                    showDeleteConfirm = true
+                } label: {
+                    Image(systemName: "trash")
+                }
+            }
+            #else
             ToolbarItem(placement: .automatic) {
                 Button(role: .destructive) {
                     showDeleteConfirm = true
@@ -116,6 +123,7 @@ struct PlaylistDetailView: View {
                     Image(systemName: "trash")
                 }
             }
+            #endif
         }
         .alert("Delete Playlist?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) {

@@ -391,36 +391,39 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         buttonWindow = window
         let container = rootVC.view!
 
-        // Floating share FAB - small round button above the timeline
-        let fabSize: CGFloat = 40
+        // Bookmark-style share button that sits near the timebar
+        let btnHeight: CGFloat = 36
+        let btnWidth: CGFloat = 44
         let fabBg = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
         fabBg.clipsToBounds = true
-        fabBg.layer.cornerRadius = fabSize / 2
+        fabBg.layer.cornerRadius = 8
         fabBg.translatesAutoresizingMaskIntoConstraints = false
         container.addSubview(fabBg)
         self.shareFabBg = fabBg
 
         let fab = UIButton(type: .system)
-        fab.setImage(UIImage(systemName: "arrowshape.turn.up.forward.circle.fill")?.withConfiguration(
-            UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+        fab.setImage(UIImage(systemName: "bookmark.circle.fill")?.withConfiguration(
+            UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
         ), for: .normal)
         fab.tintColor = .white
         fab.translatesAutoresizingMaskIntoConstraints = false
         fab.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
         fabBg.contentView.addSubview(fab)
         self.shareFab = fab
-        self.shareBtn = fab  // keep reference for popover sourceView
+        self.shareBtn = fab
 
-        let bottomPad: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 56 : 160
+        // Position: right side, just above the transport bar / timebar area
+        // iPhone timebar is ~52pt from bottom safe area; iPad ~44pt
+        let bottomPad: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 8 : 52
         NSLayoutConstraint.activate([
-            fabBg.widthAnchor.constraint(equalToConstant: fabSize),
-            fabBg.heightAnchor.constraint(equalToConstant: fabSize),
-            fabBg.trailingAnchor.constraint(equalTo: container.safeAreaLayoutGuide.trailingAnchor, constant: -16),
-            fabBg.bottomAnchor.constraint(equalTo: container.safeAreaLayoutGuide.bottomAnchor, constant: -bottomPad),
+            fabBg.widthAnchor.constraint(equalToConstant: btnWidth),
+            fabBg.heightAnchor.constraint(equalToConstant: btnHeight),
+            fabBg.trailingAnchor.constraint(equalTo: container.safeAreaLayoutGuide.trailingAnchor, constant: -12),
+            fabBg.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -bottomPad),
             fab.centerXAnchor.constraint(equalTo: fabBg.contentView.centerXAnchor),
             fab.centerYAnchor.constraint(equalTo: fabBg.contentView.centerYAnchor),
-            fab.widthAnchor.constraint(equalToConstant: fabSize),
-            fab.heightAnchor.constraint(equalToConstant: fabSize),
+            fab.widthAnchor.constraint(equalToConstant: btnWidth),
+            fab.heightAnchor.constraint(equalToConstant: btnHeight),
         ])
 
         // Show/hide in sync with player controls

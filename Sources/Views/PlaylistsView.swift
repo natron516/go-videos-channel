@@ -124,8 +124,6 @@ struct PlaylistRowView: View {
                     .foregroundColor(.secondary)
             }
             Spacer()
-            Image(systemName: "chevron.right")
-                .foregroundColor(.secondary)
         }
         .padding()
         .background(Color.gray.opacity(0.1))
