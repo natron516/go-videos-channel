@@ -409,8 +409,8 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         self.bookmarkCenterX = centerX
 
         // Bottom tip sits just above the top edge of the timebar capsule
-        // iPhone timebar capsule: ~20pt from bottom to capsule bottom, ~44pt tall = ~64pt to capsule top
-        let aboveTimebar: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 56 : 66
+        // iPhone: capsule top is ~78pt from screen bottom; iPad: ~60pt
+        let aboveTimebar: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 62 : 80
         NSLayoutConstraint.activate([
             bookmark.widthAnchor.constraint(equalToConstant: 26),
             bookmark.heightAnchor.constraint(equalToConstant: 32),
@@ -459,48 +459,41 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         bookmarkCenterX?.constant = x
     }
 
-    // MARK: Visibility — syncs with native player controls
+    // MARK: Visibility — mirrors native player control show/hide timing
+    // Native AVKit controls: appear on tap, auto-hide after ~5s of no interaction.
+    // We match that exact cycle.
+
+    private var controlsVisible = true
 
     private func showButtons() {
+        controlsVisible = true
         UIView.animate(withDuration: 0.2) { self.bookmarkView?.alpha = 1 }
     }
 
     private func hideButtons() {
+        controlsVisible = false
         UIView.animate(withDuration: 0.3) { self.bookmarkView?.alpha = 0 }
     }
 
+    /// Start the auto-hide cycle (matches native ~5s timeout)
     private func scheduleHide() {
         hideTimer?.invalidate()
-        hideTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in
-            self?.syncWithPlayerControls()
+        hideTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: false) { [weak self] _ in
+            self?.hideButtons()
         }
     }
 
-    /// Match bookmark visibility to the native AVPlayerViewController controls.
-    /// The system transport bar lives in a private subview; we detect its alpha.
-    private func syncWithPlayerControls() {
-        guard let vc = vc else { return }
-        let controlsVisible = isTransportBarVisible(in: vc.view)
-        let target: CGFloat = controlsVisible ? 1 : 0
-        if bookmarkView?.alpha != target {
-            UIView.animate(withDuration: 0.25) { self.bookmarkView?.alpha = target }
-        }
-    }
-
-    private func isTransportBarVisible(in view: UIView) -> Bool {
-        // Look for the transport controls container by class name fragment
-        let name = NSStringFromClass(type(of: view))
-        if name.contains("Transport") || name.contains("PlaybackControl") {
-            return view.alpha > 0.5 && !view.isHidden
-        }
-        for sub in view.subviews {
-            if isTransportBarVisible(in: sub) { return true }
-        }
-        return false
-    }
-
+    /// Called on each tap — toggle controls just like native player does
     private func showAndKeep() {
-        showButtons()
+        if controlsVisible {
+            // Controls are showing — tap hides them (native behavior)
+            hideTimer?.invalidate()
+            hideButtons()
+        } else {
+            // Controls are hidden — tap shows them + starts auto-hide timer
+            showButtons()
+            scheduleHide()
+        }
     }
 
     private func tearDown() {
