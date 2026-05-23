@@ -476,37 +476,30 @@ private final class PlayerButtonsManager: NSObject {
         }
     }
 
-    /// Find the alpha of the native playback controls by looking for
-    /// any container whose children include multiple UIButtons (the X, play, skip buttons).
-    /// Returns the alpha of that container, or 1.0 as default.
-    private func effectiveControlAlpha(in view: UIView) -> CGFloat {
-        // Check if this view is a controls container: has 2+ UIButton descendants at shallow depth
-        // and is a direct child of the player view
-        for sub in view.subviews {
-            let className = NSStringFromClass(type(of: sub))
-            // AVKit uses views with "Playback" or "Transport" or "Controls" in the name
-            if className.contains("layback") || className.contains("ransport") || className.contains("ontrol") {
-                return sub.alpha
-            }
-            // Recurse one level deeper
-            for sub2 in sub.subviews {
-                let cn2 = NSStringFromClass(type(of: sub2))
-                if cn2.contains("layback") || cn2.contains("ransport") || cn2.contains("ontrol") {
-                    return sub2.alpha
-                }
-            }
+    /// Compute the true visible alpha of the native controls by finding
+    /// a UIButton (close/play/skip) and walking its entire ancestor chain.
+    /// When AVKit hides controls, a parent container's alpha goes to 0.
+    private func effectiveControlAlpha(in rootView: UIView) -> CGFloat {
+        guard let btn = findFirstButton(in: rootView) else { return 0 }
+        // Walk from the button up through all ancestors to the rootView,
+        // multiplying alpha at each level. If ANY ancestor has alpha~0,
+        // the result will be ~0.
+        var alpha: CGFloat = 1.0
+        var current: UIView? = btn
+        while let v = current, v !== rootView {
+            alpha *= v.alpha
+            current = v.superview
         }
-        // Fallback: check if the X close button (top-left UIButton) is visible
-        if let btn = findFirstButton(in: view) {
-            return btn.alpha * (btn.superview?.alpha ?? 1)
-        }
-        return 1.0
+        return alpha
     }
 
     private func findFirstButton(in view: UIView) -> UIButton? {
-        if let btn = view as? UIButton { return btn }
-        for sub in view.subviews {
-            if let btn = findFirstButton(in: sub) { return btn }
+        // Breadth-first: find the topmost UIButton (likely the X close button)
+        var queue: [UIView] = [view]
+        while !queue.isEmpty {
+            let v = queue.removeFirst()
+            if let btn = v as? UIButton { return btn }
+            queue.append(contentsOf: v.subviews)
         }
         return nil
     }
