@@ -408,10 +408,11 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         let centerX = bookmark.centerXAnchor.constraint(equalTo: container.leadingAnchor, constant: timebarInsetLeft)
         self.bookmarkCenterX = centerX
 
+        // Point hangs DOWN to touch the timebar; anchor by bottom edge
         NSLayoutConstraint.activate([
-            bookmark.widthAnchor.constraint(equalToConstant: 30),
-            bookmark.heightAnchor.constraint(equalToConstant: 36),
-            bookmark.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -(timebarBottomOffset + 18)),
+            bookmark.widthAnchor.constraint(equalToConstant: 26),
+            bookmark.heightAnchor.constraint(equalToConstant: 32),
+            bookmark.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -(timebarBottomOffset - 2)),
             centerX,
         ])
 
@@ -457,23 +458,18 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
     }
 
     // MARK: Visibility
+    // Bookmark is always visible while the player is active — no auto-hide.
 
     private func showButtons() {
         bookmarkView?.alpha = 1
     }
 
     private func scheduleHide() {
-        hideTimer?.invalidate()
-        hideTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
-            UIView.animate(withDuration: 0.3) {
-                self?.bookmarkView?.alpha = 0
-            }
-        }
+        // No-op: bookmark stays visible at all times
     }
 
     private func showAndKeep() {
         showButtons()
-        scheduleHide()
     }
 
     private func tearDown() {
@@ -550,27 +546,32 @@ private class ShareBookmarkView: UIControl {
         let bh = h - inset * 2  // bookmark height
         let bx = inset
         let by = inset
-        let notchDepth: CGFloat = bh * 0.18
+        let pointDepth: CGFloat = bh * 0.22
 
-        // Draw bookmark shape (rectangle with V notch at bottom)
+        // Bookmark shape: flat top with rounded corners, tapers to point at bottom
         let path = UIBezierPath()
-        path.move(to: CGPoint(x: bx, y: by))
-        path.addLine(to: CGPoint(x: bx + bw, y: by))
-        path.addLine(to: CGPoint(x: bx + bw, y: by + bh))
-        path.addLine(to: CGPoint(x: bx + bw / 2, y: by + bh - notchDepth))
-        path.addLine(to: CGPoint(x: bx, y: by + bh))
+        let cornerR: CGFloat = 3
+        path.move(to: CGPoint(x: bx + cornerR, y: by))
+        path.addLine(to: CGPoint(x: bx + bw - cornerR, y: by))
+        path.addArc(withCenter: CGPoint(x: bx + bw - cornerR, y: by + cornerR), radius: cornerR, startAngle: -.pi / 2, endAngle: 0, clockwise: true)
+        path.addLine(to: CGPoint(x: bx + bw, y: by + bh - pointDepth))
+        path.addLine(to: CGPoint(x: bx + bw / 2, y: by + bh))  // point at bottom
+        path.addLine(to: CGPoint(x: bx, y: by + bh - pointDepth))
+        path.addLine(to: CGPoint(x: bx, y: by + cornerR))
+        path.addArc(withCenter: CGPoint(x: bx + cornerR, y: by + cornerR), radius: cornerR, startAngle: .pi, endAngle: -.pi / 2, clockwise: true)
         path.close()
 
-        // Semi-transparent white fill with slight shadow
+        // White fill with drop shadow
         ctx.setShadow(offset: CGSize(width: 0, height: 1), blur: 3, color: UIColor.black.withAlphaComponent(0.5).cgColor)
-        bookmarkColor.withAlphaComponent(0.9).setFill()
+        bookmarkColor.withAlphaComponent(0.92).setFill()
         path.fill()
         ctx.setShadow(offset: .zero, blur: 0)
 
-        // Draw small share arrow (↑) in the upper portion of the bookmark
-        let arrowSize: CGFloat = min(bw, bh) * 0.38
+        // Share arrow in the body area (above the point)
+        let bodyH = bh - pointDepth
+        let arrowSize: CGFloat = min(bw, bodyH) * 0.38
         let arrowCX = bx + bw / 2
-        let arrowCY = by + bh * 0.35
+        let arrowCY = by + bodyH * 0.45
 
         let arrowPath = UIBezierPath()
         // Arrow stem
