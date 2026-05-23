@@ -11,6 +11,7 @@ struct SermonLibraryView: View {
     @State private var showAddToPlaylist = false
     @ObservedObject private var audioDownloader = AudioDownloadManager.shared
     #if !os(tvOS)
+    @ObservedObject private var videoDownloader = VideoDownloadManager.shared
     @State private var showLinkTV = false
     @State private var showWatchTimer = false
     @State private var showSearch = false
@@ -124,12 +125,17 @@ struct SermonLibraryView: View {
                                             Label("Download Audio", systemImage: "waveform.and.arrow.down")
                                         }
                                         .disabled(AudioDownloadManager.shared.isDownloading)
-                                    }
-                                    if CastManager.shared.isConnected, let url = asset.streamURL {
-                                        Button {
-                                            CastManager.shared.cast(url: url, title: asset.title)
-                                        } label: {
-                                            Label("Cast to TV", systemImage: "tv")
+
+                                        if videoDownloader.isDownloaded(asset.id) {
+                                            Label("Downloaded ✓", systemImage: "checkmark.circle.fill")
+                                        } else if videoDownloader.isDownloading(asset.id) {
+                                            Label("Downloading...", systemImage: "arrow.down.circle")
+                                        } else {
+                                            Button {
+                                                VideoDownloadManager.shared.startDownload(asset: asset)
+                                            } label: {
+                                                Label("Download Video", systemImage: "arrow.down.circle")
+                                            }
                                         }
                                     }
                                     #endif
@@ -187,6 +193,7 @@ struct SermonLibraryView: View {
             assets = all.filter { $0.category == "sermon" || $0.category == nil }
             // Keep LiveStreamManager current so card borders reflect live state
             LiveStreamManager.shared.update(stream: try? await liveStream, allAssets: all)
+            NewContentTracker.shared.update(assets: all)
             prefetchThumbnails(assets.map(\.thumbnailURL))
         } catch { print("Error: \(error)") }
         isLoading = false
@@ -202,6 +209,11 @@ struct SermonCardView: View {
     @ObservedObject private var liveManager = LiveStreamManager.shared
 
     private var isLive: Bool { liveManager.isAssetLive(asset) }
+
+    private var isNewVideo: Bool {
+        guard let tsString = asset.createdAt, let ts = Double(tsString) else { return false }
+        return Date().timeIntervalSince(Date(timeIntervalSince1970: ts)) < 3 * 24 * 60 * 60
+    }
 
     var body: some View {
         VStack(alignment: featured ? .center : .leading, spacing: featured ? 8 : 4) {
@@ -233,6 +245,15 @@ struct SermonCardView: View {
                             .background(Color.red)
                             .clipShape(Capsule())
                             .padding(4)
+                    } else if isNewVideo {
+                        Text("NEW")
+                            .font(.system(size: 14, weight: .heavy))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Color.blue)
+                            .clipShape(Capsule())
+                            .padding(6)
                     }
                 }
 

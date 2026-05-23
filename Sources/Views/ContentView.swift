@@ -246,12 +246,18 @@ struct TVSidebarItem: View {
     var isLive: Bool = false
     @Environment(\.isFocused) var isFocused
     @ObservedObject private var liveManager = LiveStreamManager.shared
+    @ObservedObject private var newContent = NewContentTracker.shared
 
     private var hasLive: Bool {
         guard liveManager.isLive,
               let cat = section.assetCategory,
               let liveCat = liveManager.liveCategory else { return false }
         return liveCat == cat
+    }
+
+    private var hasNew: Bool {
+        guard !hasLive, let cat = section.assetCategory else { return false }
+        return newContent.hasNew(cat)
     }
 
     var body: some View {
@@ -268,6 +274,10 @@ struct TVSidebarItem: View {
                 Circle()
                     .fill(Color.red)
                     .frame(width: 10, height: 10)
+            } else if hasNew {
+                Circle()
+                    .fill(Color.blue)
+                    .frame(width: 8, height: 8)
             }
             Spacer()
         }
@@ -326,6 +336,7 @@ struct TVContentView: View {
                 let assets = (try? await api.fetchAssets()) ?? []
                 await MainActor.run {
                     LiveStreamManager.shared.update(stream: stream, allAssets: assets, authoritative: true)
+                    NewContentTracker.shared.update(assets: assets)
                 }
                 try? await Task.sleep(nanoseconds: 30_000_000_000)
             }
@@ -390,6 +401,7 @@ struct TVContentView: View {
 struct ContentView: View {
     @EnvironmentObject var api: MuxAPI
 
+
     var body: some View {
         #if os(tvOS)
         TVContentView()
@@ -407,11 +419,19 @@ struct ContentView: View {
     @State private var selectedTab: Int = 0
     @ObservedObject private var auth = AuthService.shared
     @ObservedObject private var liveManager = LiveStreamManager.shared
+    @ObservedObject private var newContent = NewContentTracker.shared
 
     /// Returns true when a live stream is active in the given Mux category.
     private func isLive(_ category: String) -> Bool {
         guard liveManager.isLive, let liveCat = liveManager.liveCategory else { return false }
         return liveCat == category
+    }
+
+    /// Tab title with live or new-content indicator.
+    private func tabTitle(_ title: String, category: String) -> String {
+        if isLive(category) { return "🔴 \(title)" }
+        if newContent.hasNew(category) { return "\u{1F535} \(title)" }  // blue circle
+        return title
     }
 
 
@@ -424,46 +444,49 @@ struct ContentView: View {
                 .tag(0)
 
             NavigationStack { SermonLibraryView() }
-                .tabItem { Label(isLive("sermon") ? "🔴 Sermons" : "Sermons", systemImage: "film.stack") }
+                .tabItem { Label(tabTitle("Sermons", category: "sermon"), systemImage: "film.stack") }
                 .tag(1)
 
             NavigationStack {
                 CategoryLibraryView(title: "Children's", category: "children", icon: "star.circle.fill")
             }
-            .tabItem { Label(isLive("children") ? "🔴 Children's" : "Children's", systemImage: "star.circle.fill") }
+            .tabItem { Label(tabTitle("Children's", category: "children"), systemImage: "star.circle.fill") }
             .tag(2)
 
             NavigationStack {
                 CategoryLibraryView(title: "Music", category: "music", icon: "music.note.tv.fill")
             }
-            .tabItem { Label(isLive("music") ? "🔴 Music" : "Music", systemImage: "music.note.tv.fill") }
+            .tabItem { Label(tabTitle("Music", category: "music"), systemImage: "music.note.tv.fill") }
             .tag(3)
 
             NavigationStack {
                 CategoryLibraryView(title: "Performances", category: "performance", icon: "theatermasks.fill")
             }
-            .tabItem { Label(isLive("performance") ? "🔴 Shows" : "Shows", systemImage: "theatermasks.fill") }
+            .tabItem { Label(tabTitle("Shows", category: "performance"), systemImage: "theatermasks.fill") }
             .tag(4)
 
             NavigationStack {
                 CategoryLibraryView(title: "FunZone", category: "funzone", icon: "party.popper.fill")
             }
-            .tabItem { Label(isLive("funzone") ? "🔴 FunZone" : "FunZone", systemImage: "party.popper.fill") }
+            .tabItem { Label(tabTitle("FunZone", category: "funzone"), systemImage: "party.popper.fill") }
             .tag(5)
 
             NavigationStack { PlaylistsView() }
                 .tabItem { Label("Lists", systemImage: "music.note.list") }
                 .tag(6)
 
+            NavigationStack { DownloadsView() }
+                .tabItem { Label("Downloaded", systemImage: "arrow.down.circle.fill") }
+                .tag(7)
+
             if auth.hasPrivateAccess {
                 NavigationStack {
                     CategoryLibraryView(title: "Private", category: "hidden", icon: "lock.fill", includePrivate: true)
                 }
-                .tabItem { Label(isLive("hidden") ? "🔴 Private" : "Private", systemImage: "lock.fill") }
-                .tag(7)
+                .tabItem { Label(tabTitle("Private", category: "hidden"), systemImage: "lock.fill") }
+                .tag(8)
             }
         }
-
         .task {
             // Authoritative live stream poller for iOS (mirrors tvOS poller)
             while !Task.isCancelled {
@@ -471,6 +494,7 @@ struct ContentView: View {
                 let assets = (try? await api.fetchAllAssets()) ?? []
                 await MainActor.run {
                     LiveStreamManager.shared.update(stream: stream, allAssets: assets, authoritative: true)
+                    NewContentTracker.shared.update(assets: assets)
                 }
                 try? await Task.sleep(nanoseconds: 30_000_000_000)
             }

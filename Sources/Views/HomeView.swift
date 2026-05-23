@@ -130,13 +130,6 @@ struct HomeView: View {
                                         Label("Share", systemImage: "square.and.arrow.up")
                                     }
                                 }
-                                if CastManager.shared.isConnected, let url = asset.streamURL {
-                                    Button {
-                                        CastManager.shared.cast(url: url, title: asset.title)
-                                    } label: {
-                                        Label("Cast to TV", systemImage: "tv")
-                                    }
-                                }
                                 #endif
                             }
                         }
@@ -233,6 +226,7 @@ struct HomeView: View {
         recentAssets = fetched.filter { $0.category != "sermon" }
         liveStream = try? await live
         LiveStreamManager.shared.update(stream: liveStream, allAssets: fetched)
+        NewContentTracker.shared.update(assets: fetched)
         prefetchThumbnails(displayAssets.map(\.thumbnailURL))
         isLoading = false
     }

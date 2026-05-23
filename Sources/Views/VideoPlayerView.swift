@@ -2,9 +2,7 @@ import SwiftUI
 import AVKit
 import MUXSDKStats
 import FirebaseAuth
-#if !os(tvOS)
-import GoogleCast
-#endif
+
 
 // MARK: - Mux Data ENV Key
 private let kMuxDataEnvKey = "kmoo2e3phld20msigd6flcreb"
@@ -84,7 +82,7 @@ func presentPlayer(url: URL, autoplay: Bool = false, asset: MuxAsset? = nil) {
     } else {
         isLiveAsset = false
     }
-    // Use HLS proxy for live assets — strips EXT-X-PROGRAM-DATE-TIME so AVKit
+    // Use HLS proxy for live assets - strips EXT-X-PROGRAM-DATE-TIME so AVKit
     // shows elapsed time with seconds instead of wall-clock time
     let item = isLiveAsset ? LiveHLSProxy.makePlayerItem(url: url) : AVPlayerItem(url: url)
     if !isLiveAsset { item.automaticallyPreservesTimeOffsetFromLive = true }
@@ -103,7 +101,7 @@ func presentPlayer(url: URL, autoplay: Bool = false, asset: MuxAsset? = nil) {
         MuxAssetURLTracker.track(url: proxyURL, assetId: assetId)
     }
     if isLiveAsset {
-        // Read saved position BEFORE clearing — saveAndClear() writes to PlaybackProgress on dismiss
+        // Read saved position BEFORE clearing - saveAndClear() writes to PlaybackProgress on dismiss
         let resumePos: Double? = PlaybackProgress.shared.hasProgress(for: assetId)
             ? PlaybackProgress.shared.position(for: assetId) : nil
         PlaybackProgress.shared.clear(assetId: assetId)
@@ -115,13 +113,13 @@ func presentPlayer(url: URL, autoplay: Bool = false, asset: MuxAsset? = nil) {
                 let time = CMTime(seconds: pos, preferredTimescale: 600)
                 player?.seek(to: time, toleranceBefore: .zero, toleranceAfter: CMTime(seconds: 2, preferredTimescale: 600))
             } else {
-                // First open — jump to live edge
+                // First open - jump to live edge
                 player?.seek(to: .positiveInfinity, toleranceBefore: .positiveInfinity, toleranceAfter: .positiveInfinity)
             }
             liveObs?.invalidate(); liveObs = nil
         }
     } else if let deepSeek = DeepLinkSeekManager.shared.pendingSeek {
-        // Shared link with timecode — seek to the requested position
+        // Shared link with timecode - seek to the requested position
         DeepLinkSeekManager.shared.pendingSeek = nil
         var obs: NSKeyValueObservation?
         obs = player.currentItem?.observe(\.status, options: [.new]) { [weak player] item, _ in
@@ -135,7 +133,7 @@ func presentPlayer(url: URL, autoplay: Bool = false, asset: MuxAsset? = nil) {
         var obs: NSKeyValueObservation?
         obs = player.currentItem?.observe(\.status, options: [.new]) { [weak player] item, _ in
             if item.status == .readyToPlay {
-                // Skip resume for short videos (< 5 min) — always start from beginning
+                // Skip resume for short videos (< 5 min) - always start from beginning
                 let duration = item.duration.seconds
                 if !duration.isNaN && duration < 300 {
                     PlaybackProgress.shared.clear(assetId: assetId)
@@ -366,8 +364,7 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
 
     private weak var vc: UIViewController?
     private weak var shareBtn: UIButton?
-    private weak var castBtn: GCKUICastButton?
-    private weak var pillView: UIVisualEffectView?
+
     private weak var shareFab: UIButton?
     private weak var shareFabBg: UIVisualEffectView?
     private var hideTimer: Timer?
@@ -382,7 +379,7 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
     func addButtons() {
         guard let vc = vc, let scene = vc.view.window?.windowScene else { return }
 
-        // Floating UIWindow — always above AVPlayerViewController’s entire layer stack
+        // Floating UIWindow - always above AVPlayerViewController's entire layer stack
         let window = PassthroughWindow(windowScene: scene)
         window.windowLevel = UIWindow.Level.alert + 1
         window.backgroundColor = .clear
@@ -394,35 +391,7 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         buttonWindow = window
         let container = rootVC.view!
 
-        // Blurred pill matching AVPlayerViewController’s native control style
-        let pill = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
-        pill.clipsToBounds = true
-        pill.layer.cornerRadius = 22
-        pill.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(pill)
-        self.pillView = pill
-
-        // Cast (stays in top pill)
-        let cast = GCKUICastButton(frame: .zero)
-        cast.tintColor = .white
-        cast.translatesAutoresizingMaskIntoConstraints = false
-        pill.contentView.addSubview(cast)
-        self.castBtn = cast
-
-        NSLayoutConstraint.activate([
-            // Cast button inside pill
-            cast.leadingAnchor.constraint(equalTo: pill.contentView.leadingAnchor, constant: 8),
-            cast.trailingAnchor.constraint(equalTo: pill.contentView.trailingAnchor, constant: -8),
-            cast.centerYAnchor.constraint(equalTo: pill.contentView.centerYAnchor),
-            cast.widthAnchor.constraint(equalToConstant: 36),
-            cast.heightAnchor.constraint(equalToConstant: 36),
-            // Pill position: top-leading
-            pill.topAnchor.constraint(equalTo: container.safeAreaLayoutGuide.topAnchor, constant: -2),
-            pill.leadingAnchor.constraint(equalTo: container.safeAreaLayoutGuide.leadingAnchor, constant: UIDevice.current.userInterfaceIdiom == .pad ? 180 : 220),
-            pill.heightAnchor.constraint(equalToConstant: 44),
-        ])
-
-        // Floating share FAB — small round button above the timeline
+        // Floating share FAB - small round button above the timeline
         let fabSize: CGFloat = 40
         let fabBg = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
         fabBg.clipsToBounds = true
@@ -432,8 +401,8 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         self.shareFabBg = fabBg
 
         let fab = UIButton(type: .system)
-        fab.setImage(UIImage(systemName: "square.and.arrow.up")?.withConfiguration(
-            UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
+        fab.setImage(UIImage(systemName: "arrowshape.turn.up.forward.circle.fill")?.withConfiguration(
+            UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
         ), for: .normal)
         fab.tintColor = .white
         fab.translatesAutoresizingMaskIntoConstraints = false
@@ -442,7 +411,7 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         self.shareFab = fab
         self.shareBtn = fab  // keep reference for popover sourceView
 
-        let bottomPad: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 56 : 48
+        let bottomPad: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 56 : 160
         NSLayoutConstraint.activate([
             fabBg.widthAnchor.constraint(equalToConstant: fabSize),
             fabBg.heightAnchor.constraint(equalToConstant: fabSize),
@@ -460,19 +429,6 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         tap.cancelsTouchesInView = false
         tap.delegate = self
         vc.view.addGestureRecognizer(tap)
-
-        // Cast handoff
-        NotificationCenter.default.addObserver(
-            forName: .gckCastStateDidChange,
-            object: nil,
-            queue: .main
-        ) { [weak vc] _ in
-            guard CastManager.shared.isConnected,
-                  let url = ActivePlayerSession.shared.currentURL else { return }
-            let time = ActivePlayerSession.shared.currentTime ?? 0
-            if let playerVC = vc as? AVPlayerViewController { playerVC.player?.pause() }
-            CastManager.shared.cast(url: url, title: ActivePlayerSession.shared.currentTitle, startTime: time)
-        }
 
         // Tear down window when player is dismissed
         dismissTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self, weak vc] t in
@@ -492,8 +448,6 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
     // MARK: Visibility
 
     private func showButtons() {
-        pillView?.alpha = 1
-        castBtn?.alpha = 1
         shareFabBg?.alpha = 1
         shareFab?.alpha = 1
     }
@@ -502,8 +456,6 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         hideTimer?.invalidate()
         hideTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
             UIView.animate(withDuration: 0.3) {
-                self?.pillView?.alpha = 0
-                self?.castBtn?.alpha = 0
                 self?.shareFabBg?.alpha = 0
                 self?.shareFab?.alpha = 0
             }
@@ -594,7 +546,7 @@ func addTimerOverlay(to vc: UIViewController) {
     hostingController.view.backgroundColor = .clear
     hostingController.view.isUserInteractionEnabled = false
     hostingController.view.layer.zPosition = 9999 // Stay above all controls
-    
+
     vc.view.addSubview(hostingController.view)
     hostingController.view.translatesAutoresizingMaskIntoConstraints = false
     #if os(tvOS)
@@ -614,7 +566,7 @@ func addTimerOverlay(to vc: UIViewController) {
         hostingController.view.widthAnchor.constraint(equalToConstant: overlayWidth),
         hostingController.view.heightAnchor.constraint(equalToConstant: overlayHeight)
     ])
-    
+
     // Keep the hosting controller alive
     vc.addChild(hostingController)
     hostingController.didMove(toParent: vc)
@@ -624,7 +576,7 @@ class WatchTimerOverlayController: UIHostingController<WatchTimerOverlayView> {
     init() {
         super.init(rootView: WatchTimerOverlayView())
     }
-    
+
     @MainActor required dynamic init?(coder aDecoder: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
@@ -632,7 +584,7 @@ class WatchTimerOverlayController: UIHostingController<WatchTimerOverlayView> {
 
 struct WatchTimerOverlayView: View {
     @ObservedObject private var watchTimer = WatchTimerManager.shared
-    
+
     private var fontSize: CGFloat {
         #if os(tvOS)
         return 32
@@ -640,7 +592,7 @@ struct WatchTimerOverlayView: View {
         return 18
         #endif
     }
-    
+
     var body: some View {
         if watchTimer.isRunning {
             Text(watchTimer.formattedTimeRemaining)

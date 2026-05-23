@@ -12,6 +12,7 @@ struct CategoryLibraryView: View {
     @State private var addToPlaylistAssetId: String?
     @State private var showAddToPlaylist = false
     #if !os(tvOS)
+    @ObservedObject private var videoDownloader = VideoDownloadManager.shared
     @State private var showLinkTV = false
     @State private var showWatchTimer = false
     @State private var showSearch = false
@@ -89,11 +90,17 @@ struct CategoryLibraryView: View {
                                             Label("Share", systemImage: "square.and.arrow.up")
                                         }
                                     }
-                                    if CastManager.shared.isConnected, let url = asset.streamURL {
-                                        Button {
-                                            CastManager.shared.cast(url: url, title: asset.title)
-                                        } label: {
-                                            Label("Cast to TV", systemImage: "tv")
+                                    if asset.streamURL != nil {
+                                        if videoDownloader.isDownloaded(asset.id) {
+                                            Label("Downloaded ✓", systemImage: "checkmark.circle.fill")
+                                        } else if videoDownloader.isDownloading(asset.id) {
+                                            Label("Downloading...", systemImage: "arrow.down.circle")
+                                        } else {
+                                            Button {
+                                                VideoDownloadManager.shared.startDownload(asset: asset)
+                                            } label: {
+                                                Label("Download Video", systemImage: "arrow.down.circle")
+                                            }
                                         }
                                     }
                                     #endif

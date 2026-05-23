@@ -1,5 +1,5 @@
 {
-  "originHash" : "15ec87f696495974a5ad65754b285c6c17ddf2a0d38ed658aedd8110dd39a6f3",
+  "originHash" : "7b9a85a96f08c0cd1af171ca686c1036ca92de3dbb14763f3611518ed96aba2b",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -44,15 +44,6 @@
       "state" : {
         "revision" : "a2d0f1f1666de591eb1a811f40b1706f5c63a2ed",
         "version" : "2.3.0"
-      }
-    },
-    {
-      "identity" : "google-cast-sdk",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/SRGSSR/google-cast-sdk",
-      "state" : {
-        "revision" : "516f7111116bc412230309636842d3bbf77efdd8",
-        "version" : "4.8.4"
       }
     },
     {

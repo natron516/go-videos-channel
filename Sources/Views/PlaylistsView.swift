@@ -4,6 +4,7 @@ struct PlaylistsView: View {
     @ObservedObject private var manager = PlaylistManager.shared
     @State private var showNewPlaylist = false
     @State private var newPlaylistName = ""
+    @State private var selectedPlaylistId: UUID?
 
     var body: some View {
         Group {
@@ -35,9 +36,13 @@ struct PlaylistsView: View {
                             HStack(spacing: 16) {
                                 TextField("Playlist name", text: $newPlaylistName)
                                     .font(.title3)
+                                    #if !os(tvOS)
+                                    .textFieldStyle(.roundedBorder)
+                                    #endif
                                 Button("Create") {
-                                    if !newPlaylistName.isEmpty {
-                                        _ = manager.create(name: newPlaylistName)
+                                    let trimmed = newPlaylistName.trimmingCharacters(in: .whitespaces)
+                                    if !trimmed.isEmpty {
+                                        _ = manager.create(name: trimmed)
                                         newPlaylistName = ""
                                         showNewPlaylist = false
                                     }
@@ -59,13 +64,18 @@ struct PlaylistsView: View {
 
                         // Playlist list
                         ForEach(manager.playlists) { playlist in
+                            #if os(tvOS)
                             NavigationLink {
                                 PlaylistDetailView(playlistId: playlist.id)
                             } label: {
                                 PlaylistRowView(playlist: playlist)
                             }
-                            #if os(tvOS)
                             .buttonStyle(.card)
+                            #else
+                            NavigationLink(value: playlist.id) {
+                                PlaylistRowView(playlist: playlist)
+                            }
+                            .buttonStyle(.plain)
                             #endif
                         }
                         .padding(.horizontal, 40)
@@ -84,6 +94,15 @@ struct PlaylistsView: View {
             }
         }
         .navigationTitle("Playlists")
+        #if !os(tvOS)
+        .navigationDestination(for: UUID.self) { id in
+            PlaylistDetailView(playlistId: id)
+        }
+        #endif
+        .task {
+            // Ensure playlists are loaded (covers cases where auth listener already fired)
+            await manager.reload()
+        }
     }
 }
 

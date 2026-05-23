@@ -26,10 +26,11 @@
 		24492C0632578D5600AC8CFB /* MUXSDKStats in Frameworks */ = {isa = PBXBuildFile; productRef = 3CD4E424DC7058D3796D101E /* MUXSDKStats */; };
 		26A43AD2CBA73C9B9533D083 /* FeedbackView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 252BE56E919D458483EB5745 /* FeedbackView.swift */; };
 		26F8FD5D99003414EFED2E7B /* AppleMusicView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 638AD0CB70F669C5AC4BB161 /* AppleMusicView.swift */; };
+		2A992876A8C3290F0E889A0E /* NewContentTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E107B066E569123D75C696C /* NewContentTracker.swift */; };
 		2AAD281AE18A3E5CF2092DC3 /* PlaylistDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5E24BBD8FF9E929DDC68A28 /* PlaylistDetailView.swift */; };
 		2C0A932B9B6A1258C98074BA /* AppleMusicService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C69D01F2C33DBCAFA9788C80 /* AppleMusicService.swift */; };
 		2E168F90F496AF25412FFB9D /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 35D44B0978FF2C72BE2CC2F9 /* FirebaseFirestore */; };
-		2FFCEB32926DFF95A90AB432 /* GoogleCast in Frameworks */ = {isa = PBXBuildFile; productRef = 54D73B6444E59C73A1D498C3 /* GoogleCast */; };
+		2FFCEB32926DFF95A90AB432 /* FirebaseMessaging in Frameworks */ = {isa = PBXBuildFile; productRef = 07232A8E50ECF46A6D38B258 /* FirebaseMessaging */; };
 		332BC2A7DC0BAC497543561E /* AppNavigator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBA064B1AF5891F6AC652546 /* AppNavigator.swift */; };
 		35DA88EF2CB623D6F207B819 /* IntroSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD4BB34D3DA66E0357FBA38 /* IntroSplashView.swift */; };
 		36824E447127B361217F92C6 /* WatchTimerSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32539140281A45F015BC6E63 /* WatchTimerSetupView.swift */; };
@@ -43,20 +44,25 @@
 		421227518220D54F05B3B16C /* PlaylistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B2C470C39AA68B496C693 /* PlaylistsView.swift */; };
 		466C17651CF896882A548C72 /* FeaturedManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2767AA6ECF9AC8819158898 /* FeaturedManager.swift */; };
 		4A2A3E01606F2DA2491CB582 /* intro_splash.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = F287C5EA0C821E00E6654798 /* intro_splash.mp4 */; };
+		4F199AC780543DEB2EE61372 /* PushNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E807F1A31B58ADAB32E31DED /* PushNotificationManager.swift */; };
 		5056555187B35A2163CA407C /* IntroSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD4BB34D3DA66E0357FBA38 /* IntroSplashView.swift */; };
 		51CF61EE7E25E11F93636807 /* MuxAPI.swift in Sources */ = {isa = PBXBuildFile; fileRef = 646E57631B8B719E54844D3F /* MuxAPI.swift */; };
+		547BF8317AC2881F2ED6BDAA /* NewContentTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E107B066E569123D75C696C /* NewContentTracker.swift */; };
 		55DB8A5AF7BD4C5DBE0F6D62 /* LiveStreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A769F42E63AF02B0A7CE9ED9 /* LiveStreamView.swift */; };
 		58D9239992C4B6BF5F72027B /* MuxModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA5B13C720CB1870157FFA85 /* MuxModels.swift */; };
 		597AEE31F5CC89036B080B9F /* ForceUpdateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79685BD9EB484543EC21A89D /* ForceUpdateView.swift */; };
 		59FDE1EB10B5A7FCD021A836 /* SearchView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13D72D60A6D18E0B02CF14CC /* SearchView.swift */; };
+		5DC0E873799798B15A01B065 /* DownloadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F6331D5941B2DF1E1765764 /* DownloadsView.swift */; };
 		5FFC1F0D9AC340815F6FE7FC /* WatchTimerSetupView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 32539140281A45F015BC6E63 /* WatchTimerSetupView.swift */; };
 		631E19A89F9CB54FB61EB301 /* AudioDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69EA392FA8C68A25E0C96640 /* AudioDownloadManager.swift */; };
 		66E8BF35BBC372CBDDFA27F5 /* MUXSDKStats in Frameworks */ = {isa = PBXBuildFile; productRef = 8961F1906985231ADA4CACED /* MUXSDKStats */; };
 		6914B6704E0FA70AF7D96112 /* PinLockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 685CB064472934E29B70E6AE /* PinLockView.swift */; };
+		696DC44702590650C67A0E84 /* VideoDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB1DCFDA0ABE328C120AD7F /* VideoDownloadManager.swift */; };
 		6A13C68CE85152165CB1733F /* WatchTimerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62057527ABAE28173080BB26 /* WatchTimerManager.swift */; };
 		6A3F14F7A71F0390A7AEAA85 /* AlbumDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF40A96E6DED709473D20C93 /* AlbumDetailView.swift */; };
 		6D0849175356ECC2B9DFA619 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF44774A7E29CBA566F7B616 /* AuthService.swift */; };
 		6DED98CB1E7F4A0D09DF2B47 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 5C61C0AD64DD13DEC5E84967 /* FirebaseRemoteConfig */; };
+		6EE469E8C1B5BD7BF77CBD1E /* VideoDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB1DCFDA0ABE328C120AD7F /* VideoDownloadManager.swift */; };
 		7085158A5E6EEF2A1560E0D0 /* LiveStreamView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A769F42E63AF02B0A7CE9ED9 /* LiveStreamView.swift */; };
 		7237D42BB0F9E8DF754487DD /* BrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453989F1DC1AAE3C937D73D8 /* BrowseView.swift */; };
 		72FC2B08F4ED1600EA84BBDD /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EB98D4E713668484DE5C7A0 /* HomeView.swift */; };
@@ -64,6 +70,7 @@
 		76FF919D5B0752221F11D7EB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB42A7C8E837D2D8F177E92 /* ContentView.swift */; };
 		776A53C0ABA42D38A286E9A5 /* SessionTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DEF83F4CB5DB4F1BCF6F957 /* SessionTracker.swift */; };
 		77E5A5C4EBAB5B3297F1D9BE /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 198DFAB326E47D6CBFE8E37C /* FirebaseFirestore */; };
+		7AA680DDA6C4DD8E4BC51D91 /* PushNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E807F1A31B58ADAB32E31DED /* PushNotificationManager.swift */; };
 		7B95A09E219E8F8290E35605 /* FeaturedManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2767AA6ECF9AC8819158898 /* FeaturedManager.swift */; };
 		7C30BAB0AADEA6EA0677E3A8 /* GospelOutreachTVApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 867C773603C1C6A5BD73A6A0 /* GospelOutreachTVApp.swift */; };
 		7D408BE1AA52D3922A2B9116 /* GospelOutreachTVApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 867C773603C1C6A5BD73A6A0 /* GospelOutreachTVApp.swift */; };
@@ -71,7 +78,6 @@
 		7F4E3A143569D39C7EE1F6D7 /* LiveHLSProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6B5C3BB620AE83BE388385 /* LiveHLSProxy.swift */; };
 		831FC8449C0C26DDBB61C0DF /* AutoplayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B831D5275942142F1361C54 /* AutoplayManager.swift */; };
 		83ECE79C7559D1908BC66E68 /* CategoryLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F212082C23E65755391A35E /* CategoryLibraryView.swift */; };
-		8D7D0F122A472D6970513803 /* CastManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D541D1C50347539E3BBBF692 /* CastManager.swift */; };
 		8EB64707B9B2E24B62957E5B /* PlaylistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B2C470C39AA68B496C693 /* PlaylistsView.swift */; };
 		91CFA851BF9E3370FDD61829 /* AddToPlaylistView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DFE3A70452B620032D0E602 /* AddToPlaylistView.swift */; };
 		9233AE2FBF5E1344D17B1775 /* KidsLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6CA6C9033A9513A86B6F38F2 /* KidsLibraryView.swift */; };
@@ -93,6 +99,7 @@
 		BBC897417C90F1383FEFEAE8 /* VideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48E7B9F8772B82F3F354D570 /* VideoPlayerView.swift */; };
 		C5A0BBF4227FA9C938ED416E /* WatchTimerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62057527ABAE28173080BB26 /* WatchTimerManager.swift */; };
 		C692B79778E5BD2AD49854BB /* CachedAsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AC99C87C7358E44EBC918F7 /* CachedAsyncImage.swift */; };
+		CA14B964D77C49E5717AB104 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 181D077FAC53A8FFB902E1E4 /* AppDelegate.swift */; };
 		CA74D97C966DD2A9E99514E7 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D6139901B3F964C119566D4 /* AboutView.swift */; };
 		CB5A8B050FCAD13F8B155DDB /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EB98D4E713668484DE5C7A0 /* HomeView.swift */; };
 		D16AC6ED72902428AA035328 /* TVLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 405FD0F618D0C129F32D7305 /* TVLoginView.swift */; };
@@ -103,11 +110,11 @@
 		DF7CB206541F1AD967E989AA /* BrowseView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 453989F1DC1AAE3C937D73D8 /* BrowseView.swift */; };
 		DFF42C8E1272AE5DA2B2C7F4 /* LoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A2BEB98BC4181967E6AF0B9 /* LoginView.swift */; };
 		E09D981DC7F735B25595C3DE /* LiveHLSProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB6B5C3BB620AE83BE388385 /* LiveHLSProxy.swift */; };
+		E2168F1AF469BB027434F6BD /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 181D077FAC53A8FFB902E1E4 /* AppDelegate.swift */; };
 		E29FFF9269B13A8C3E3EFFF1 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 670782E11CBDCC9BFCA18086 /* GoogleService-Info.plist */; };
 		E5634F1468F1CA47BB23010F /* AutoplayManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B831D5275942142F1361C54 /* AutoplayManager.swift */; };
 		E6F7D98CAEDF1692D5F0A412 /* PlaylistModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58CEE9694631039DF5B41E9C /* PlaylistModels.swift */; };
 		E79CECE78435209C62F86880 /* PlaylistModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58CEE9694631039DF5B41E9C /* PlaylistModels.swift */; };
-		EA62F0DE70A4291F8AC89C81 /* CastManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D541D1C50347539E3BBBF692 /* CastManager.swift */; };
 		EED463D68A7013E7A27F3E88 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = FB4D0E603F0298E4139F45A6 /* GoogleSignIn */; };
 		EFB7D1DBF7936A893BA67EE4 /* ForceUpdateView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79685BD9EB484543EC21A89D /* ForceUpdateView.swift */; };
 		F0BA75E373A36869418FAEC4 /* intro_splash.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = F287C5EA0C821E00E6654798 /* intro_splash.mp4 */; };
@@ -116,6 +123,7 @@
 		F697A2289B32663B6D3401EF /* LiveStreamManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44B71939DC241AEFC04A95E9 /* LiveStreamManager.swift */; };
 		FACDDFAF364E2788FE26DF97 /* WatchTimerLockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 35FE81DE79B1002FDF74E9FF /* WatchTimerLockView.swift */; };
 		FB4E7405CD3B3E194DEF9460 /* AppNavigator.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBA064B1AF5891F6AC652546 /* AppNavigator.swift */; };
+		FC1440C98C655BB4183A2942 /* DownloadsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F6331D5941B2DF1E1765764 /* DownloadsView.swift */; };
 		FFB19AA1E21D668BF7965428 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = 05C11F21CBA1F6CAAED37BC8 /* FirebaseAuth */; };
 		FFC937001C5EC9ECD6A20C28 /* AboutView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9D6139901B3F964C119566D4 /* AboutView.swift */; };
 /* End PBXBuildFile section */
@@ -124,11 +132,15 @@
 		0DEF83F4CB5DB4F1BCF6F957 /* SessionTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SessionTracker.swift; sourceTree = "<group>"; };
 		13D72D60A6D18E0B02CF14CC /* SearchView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchView.swift; sourceTree = "<group>"; };
 		16272F9D03848DD60479FD55 /* GospelOutreach.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = GospelOutreach.entitlements; sourceTree = "<group>"; };
+		181D077FAC53A8FFB902E1E4 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		1B67BC39A37CEB8494AC55EC /* MuxAssetURLTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MuxAssetURLTracker.swift; sourceTree = "<group>"; };
 		1BD92E99B40CCBA8DC03A528 /* SermonLibraryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SermonLibraryView.swift; sourceTree = "<group>"; };
 		1EB98D4E713668484DE5C7A0 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		1F6331D5941B2DF1E1765764 /* DownloadsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DownloadsView.swift; sourceTree = "<group>"; };
 		1F99CAF0518F07F240E8F996 /* LinkTVView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LinkTVView.swift; sourceTree = "<group>"; };
 		252BE56E919D458483EB5745 /* FeedbackView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackView.swift; sourceTree = "<group>"; };
+		2E107B066E569123D75C696C /* NewContentTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NewContentTracker.swift; sourceTree = "<group>"; };
+		2FB1DCFDA0ABE328C120AD7F /* VideoDownloadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoDownloadManager.swift; sourceTree = "<group>"; };
 		32539140281A45F015BC6E63 /* WatchTimerSetupView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchTimerSetupView.swift; sourceTree = "<group>"; };
 		35FE81DE79B1002FDF74E9FF /* WatchTimerLockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchTimerLockView.swift; sourceTree = "<group>"; };
 		38730F19842EF76EB3F08D9D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
@@ -170,8 +182,8 @@
 		CF44774A7E29CBA566F7B616 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		D09DFB80BA6D8123F4E96438 /* GospelOutreachVideo_iOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = GospelOutreachVideo_iOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		D2767AA6ECF9AC8819158898 /* FeaturedManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeaturedManager.swift; sourceTree = "<group>"; };
-		D541D1C50347539E3BBBF692 /* CastManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CastManager.swift; sourceTree = "<group>"; };
 		E54B22376172037E8F9AA48B /* Shared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Shared.swift; sourceTree = "<group>"; };
+		E807F1A31B58ADAB32E31DED /* PushNotificationManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PushNotificationManager.swift; sourceTree = "<group>"; };
 		E911BC137B356D7EF221459E /* ForceUpdateService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForceUpdateService.swift; sourceTree = "<group>"; };
 		EBA064B1AF5891F6AC652546 /* AppNavigator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppNavigator.swift; sourceTree = "<group>"; };
 		F287C5EA0C821E00E6654798 /* intro_splash.mp4 */ = {isa = PBXFileReference; path = intro_splash.mp4; sourceTree = "<group>"; };
@@ -190,7 +202,7 @@
 				EED463D68A7013E7A27F3E88 /* GoogleSignIn in Frameworks */,
 				12DF277ED23ED1CEC93E03C2 /* GoogleSignInSwift in Frameworks */,
 				66E8BF35BBC372CBDDFA27F5 /* MUXSDKStats in Frameworks */,
-				2FFCEB32926DFF95A90AB432 /* GoogleCast in Frameworks */,
+				2FFCEB32926DFF95A90AB432 /* FirebaseMessaging in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -234,7 +246,6 @@
 				69EA392FA8C68A25E0C96640 /* AudioDownloadManager.swift */,
 				CF44774A7E29CBA566F7B616 /* AuthService.swift */,
 				3B831D5275942142F1361C54 /* AutoplayManager.swift */,
-				D541D1C50347539E3BBBF692 /* CastManager.swift */,
 				C2330CEFA36FEEF6C6AC5350 /* DeepLinkHandler.swift */,
 				D2767AA6ECF9AC8819158898 /* FeaturedManager.swift */,
 				E911BC137B356D7EF221459E /* ForceUpdateService.swift */,
@@ -242,9 +253,12 @@
 				44B71939DC241AEFC04A95E9 /* LiveStreamManager.swift */,
 				646E57631B8B719E54844D3F /* MuxAPI.swift */,
 				1B67BC39A37CEB8494AC55EC /* MuxAssetURLTracker.swift */,
+				2E107B066E569123D75C696C /* NewContentTracker.swift */,
 				8134AF3DEEAD343E14DE7176 /* PinUnlockManager.swift */,
 				3D9839AE70B841040F72C402 /* PlaybackProgress.swift */,
+				E807F1A31B58ADAB32E31DED /* PushNotificationManager.swift */,
 				0DEF83F4CB5DB4F1BCF6F957 /* SessionTracker.swift */,
+				2FB1DCFDA0ABE328C120AD7F /* VideoDownloadManager.swift */,
 				62057527ABAE28173080BB26 /* WatchTimerManager.swift */,
 			);
 			path = Services;
@@ -253,6 +267,7 @@
 		170B8A2DFC7F181F63264614 /* App */ = {
 			isa = PBXGroup;
 			children = (
+				181D077FAC53A8FFB902E1E4 /* AppDelegate.swift */,
 				EBA064B1AF5891F6AC652546 /* AppNavigator.swift */,
 				867C773603C1C6A5BD73A6A0 /* GospelOutreachTVApp.swift */,
 			);
@@ -306,6 +321,7 @@
 				6AC99C87C7358E44EBC918F7 /* CachedAsyncImage.swift */,
 				4F212082C23E65755391A35E /* CategoryLibraryView.swift */,
 				6BB42A7C8E837D2D8F177E92 /* ContentView.swift */,
+				1F6331D5941B2DF1E1765764 /* DownloadsView.swift */,
 				252BE56E919D458483EB5745 /* FeedbackView.swift */,
 				79685BD9EB484543EC21A89D /* ForceUpdateView.swift */,
 				1EB98D4E713668484DE5C7A0 /* HomeView.swift */,
@@ -350,7 +366,7 @@
 				FB4D0E603F0298E4139F45A6 /* GoogleSignIn */,
 				72BA9A315F8E4750E796317C /* GoogleSignInSwift */,
 				8961F1906985231ADA4CACED /* MUXSDKStats */,
-				54D73B6444E59C73A1D498C3 /* GoogleCast */,
+				07232A8E50ECF46A6D38B258 /* FirebaseMessaging */,
 			);
 			productName = GospelOutreachVideo_iOS;
 			productReference = D09DFB80BA6D8123F4E96438 /* GospelOutreachVideo_iOS.app */;
@@ -410,7 +426,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				52989700F9B30FF08C80DE0E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
-				09873C310EEC55DE9357C560 /* XCRemoteSwiftPackageReference "google-cast-sdk" */,
 				F2AF9F7923BBE405034FA9F5 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				FEE97297DB5B7C618B5537C4 /* XCRemoteSwiftPackageReference "mux-stats-sdk-avplayer" */,
 			);
@@ -456,6 +471,7 @@
 				CA74D97C966DD2A9E99514E7 /* AboutView.swift in Sources */,
 				91CFA851BF9E3370FDD61829 /* AddToPlaylistView.swift in Sources */,
 				6A3F14F7A71F0390A7AEAA85 /* AlbumDetailView.swift in Sources */,
+				CA14B964D77C49E5717AB104 /* AppDelegate.swift in Sources */,
 				332BC2A7DC0BAC497543561E /* AppNavigator.swift in Sources */,
 				2C0A932B9B6A1258C98074BA /* AppleMusicService.swift in Sources */,
 				A89A75277E9AA007E1BC24E5 /* AppleMusicView.swift in Sources */,
@@ -464,10 +480,10 @@
 				E5634F1468F1CA47BB23010F /* AutoplayManager.swift in Sources */,
 				7237D42BB0F9E8DF754487DD /* BrowseView.swift in Sources */,
 				0747A3F4CDE3D84F8F768D6D /* CachedAsyncImage.swift in Sources */,
-				EA62F0DE70A4291F8AC89C81 /* CastManager.swift in Sources */,
 				A4CAB4FD63B4E28C6F19D3BA /* CategoryLibraryView.swift in Sources */,
 				76FF919D5B0752221F11D7EB /* ContentView.swift in Sources */,
 				0C01E4D8F2FA2DBE82323BC5 /* DeepLinkHandler.swift in Sources */,
+				FC1440C98C655BB4183A2942 /* DownloadsView.swift in Sources */,
 				466C17651CF896882A548C72 /* FeaturedManager.swift in Sources */,
 				26A43AD2CBA73C9B9533D083 /* FeedbackView.swift in Sources */,
 				12A93D5772617250437DD6EE /* ForceUpdateService.swift in Sources */,
@@ -484,17 +500,20 @@
 				BB74356160C6046FF3E05032 /* MuxAPI.swift in Sources */,
 				05FAF3AAA549D58EFE6EBC5F /* MuxAssetURLTracker.swift in Sources */,
 				76E59ADE90BBE8204F87FFD5 /* MuxModels.swift in Sources */,
+				547BF8317AC2881F2ED6BDAA /* NewContentTracker.swift in Sources */,
 				BAB9BBA00AAC9DA68BE04A15 /* PinLockView.swift in Sources */,
 				02108BF384F5AF23FEDEC424 /* PinUnlockManager.swift in Sources */,
 				1F53EB431B57DDC8A2D6C9D7 /* PlaybackProgress.swift in Sources */,
 				2AAD281AE18A3E5CF2092DC3 /* PlaylistDetailView.swift in Sources */,
 				E6F7D98CAEDF1692D5F0A412 /* PlaylistModels.swift in Sources */,
 				421227518220D54F05B3B16C /* PlaylistsView.swift in Sources */,
+				4F199AC780543DEB2EE61372 /* PushNotificationManager.swift in Sources */,
 				3EAC9BE14027DC9F3C3D5F8B /* SearchView.swift in Sources */,
 				0AD1F60294B31719E317444E /* SermonLibraryView.swift in Sources */,
 				776A53C0ABA42D38A286E9A5 /* SessionTracker.swift in Sources */,
 				AF32DF88449F43A770136EFC /* Shared.swift in Sources */,
 				D16AC6ED72902428AA035328 /* TVLoginView.swift in Sources */,
+				696DC44702590650C67A0E84 /* VideoDownloadManager.swift in Sources */,
 				BBC897417C90F1383FEFEAE8 /* VideoPlayerView.swift in Sources */,
 				FACDDFAF364E2788FE26DF97 /* WatchTimerLockView.swift in Sources */,
 				C5A0BBF4227FA9C938ED416E /* WatchTimerManager.swift in Sources */,
@@ -509,6 +528,7 @@
 				FFC937001C5EC9ECD6A20C28 /* AboutView.swift in Sources */,
 				94971029E81DED4B56A9879F /* AddToPlaylistView.swift in Sources */,
 				3AE010A2643F8FF2150D6352 /* AlbumDetailView.swift in Sources */,
+				E2168F1AF469BB027434F6BD /* AppDelegate.swift in Sources */,
 				FB4E7405CD3B3E194DEF9460 /* AppNavigator.swift in Sources */,
 				1595DF7B19A332EA231DBF94 /* AppleMusicService.swift in Sources */,
 				26F8FD5D99003414EFED2E7B /* AppleMusicView.swift in Sources */,
@@ -517,10 +537,10 @@
 				831FC8449C0C26DDBB61C0DF /* AutoplayManager.swift in Sources */,
 				DF7CB206541F1AD967E989AA /* BrowseView.swift in Sources */,
 				C692B79778E5BD2AD49854BB /* CachedAsyncImage.swift in Sources */,
-				8D7D0F122A472D6970513803 /* CastManager.swift in Sources */,
 				83ECE79C7559D1908BC66E68 /* CategoryLibraryView.swift in Sources */,
 				F175EC4FF1E90CA2AD1DE46D /* ContentView.swift in Sources */,
 				1A7CC50D550568A3C55AE869 /* DeepLinkHandler.swift in Sources */,
+				5DC0E873799798B15A01B065 /* DownloadsView.swift in Sources */,
 				7B95A09E219E8F8290E35605 /* FeaturedManager.swift in Sources */,
 				1DD88E221C40EE4FA682E998 /* FeedbackView.swift in Sources */,
 				39C6FB0035C9097ED69D5CED /* ForceUpdateService.swift in Sources */,
@@ -537,17 +557,20 @@
 				51CF61EE7E25E11F93636807 /* MuxAPI.swift in Sources */,
 				DE36B174B6462DE28DDCE5C8 /* MuxAssetURLTracker.swift in Sources */,
 				58D9239992C4B6BF5F72027B /* MuxModels.swift in Sources */,
+				2A992876A8C3290F0E889A0E /* NewContentTracker.swift in Sources */,
 				6914B6704E0FA70AF7D96112 /* PinLockView.swift in Sources */,
 				7DF69711FE0ACF39F44A01A0 /* PinUnlockManager.swift in Sources */,
 				B689793AF610E7795C38D38F /* PlaybackProgress.swift in Sources */,
 				A179F431E1BD76AA9B09D611 /* PlaylistDetailView.swift in Sources */,
 				E79CECE78435209C62F86880 /* PlaylistModels.swift in Sources */,
 				8EB64707B9B2E24B62957E5B /* PlaylistsView.swift in Sources */,
+				7AA680DDA6C4DD8E4BC51D91 /* PushNotificationManager.swift in Sources */,
 				59FDE1EB10B5A7FCD021A836 /* SearchView.swift in Sources */,
 				21D3DE69E94859B429B4834F /* SermonLibraryView.swift in Sources */,
 				1C2D65BDA5CBAF3DE3F4A6A2 /* SessionTracker.swift in Sources */,
 				400B05D98D4C65295F52BEEB /* Shared.swift in Sources */,
 				9E7679E6C927C994EE7718FB /* TVLoginView.swift in Sources */,
+				6EE469E8C1B5BD7BF77CBD1E /* VideoDownloadManager.swift in Sources */,
 				B603BB0CFF1D2E580501DC72 /* VideoPlayerView.swift in Sources */,
 				A3DCC3B7CBB48F5B650E5C9D /* WatchTimerLockView.swift in Sources */,
 				6A13C68CE85152165CB1733F /* WatchTimerManager.swift in Sources */,
@@ -565,7 +588,7 @@
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_ENTITLEMENTS = "Sources/GospelOutreach-tvOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 62;
+				CURRENT_PROJECT_VERSION = 79;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Sources/Info-tvOS.plist";
@@ -574,7 +597,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6.7;
+				MARKETING_VERSION = 1.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gospeloutreacholympia.tv;
 				SDKROOT = appletvos;
 				TARGETED_DEVICE_FAMILY = 3;
@@ -653,7 +676,7 @@
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_ENTITLEMENTS = "Sources/GospelOutreach-tvOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 62;
+				CURRENT_PROJECT_VERSION = 79;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Sources/Info-tvOS.plist";
@@ -662,7 +685,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6.7;
+				MARKETING_VERSION = 1.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gospeloutreacholympia.tv;
 				SDKROOT = appletvos;
 				TARGETED_DEVICE_FAMILY = 3;
@@ -677,7 +700,7 @@
 				CODE_SIGN_ENTITLEMENTS = Sources/GospelOutreach.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 62;
+				CURRENT_PROJECT_VERSION = 79;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Sources/Info.plist;
@@ -690,7 +713,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6.7;
+				MARKETING_VERSION = 1.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gospeloutreacholympia.tv;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -761,7 +784,7 @@
 				CODE_SIGN_ENTITLEMENTS = Sources/GospelOutreach.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 62;
+				CURRENT_PROJECT_VERSION = 79;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Sources/Info.plist;
@@ -774,7 +797,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.6.7;
+				MARKETING_VERSION = 1.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.gospeloutreacholympia.tv;
 				SDKROOT = iphoneos;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -814,14 +837,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		09873C310EEC55DE9357C560 /* XCRemoteSwiftPackageReference "google-cast-sdk" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/SRGSSR/google-cast-sdk";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 4.8.4;
-			};
-		};
 		52989700F9B30FF08C80DE0E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -854,6 +869,11 @@
 			package = 52989700F9B30FF08C80DE0E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseAuth;
 		};
+		07232A8E50ECF46A6D38B258 /* FirebaseMessaging */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 52989700F9B30FF08C80DE0E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseMessaging;
+		};
 		0C766F2606180BCE45350973 /* FirebaseRemoteConfig */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 52989700F9B30FF08C80DE0E /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
@@ -878,11 +898,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = FEE97297DB5B7C618B5537C4 /* XCRemoteSwiftPackageReference "mux-stats-sdk-avplayer" */;
 			productName = MUXSDKStats;
-		};
-		54D73B6444E59C73A1D498C3 /* GoogleCast */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 09873C310EEC55DE9357C560 /* XCRemoteSwiftPackageReference "google-cast-sdk" */;
-			productName = GoogleCast;
 		};
 		5C61C0AD64DD13DEC5E84967 /* FirebaseRemoteConfig */ = {
 			isa = XCSwiftPackageProductDependency;

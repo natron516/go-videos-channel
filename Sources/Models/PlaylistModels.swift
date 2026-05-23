@@ -43,6 +43,11 @@ class PlaylistManager: ObservableObject {
         return db.collection("users").document(uid).collection("playlists")
     }
 
+    /// Public reload for views that need to ensure data is fresh.
+    func reload() async {
+        await load()
+    }
+
     // MARK: - CRUD
 
     func create(name: String) -> Playlist {

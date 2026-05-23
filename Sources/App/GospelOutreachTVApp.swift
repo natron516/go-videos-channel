@@ -1,9 +1,15 @@
 import SwiftUI
 import FirebaseCore
 import AVFoundation
+#if os(iOS)
+import UIKit
+#endif
 
 @main
 struct GospelOutreachTVApp: App {
+    #if os(iOS)
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
+    #endif
     @StateObject private var auth = AuthService.shared
 
     init() {
@@ -12,13 +18,30 @@ struct GospelOutreachTVApp: App {
         #if os(iOS)
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
         try? AVAudioSession.sharedInstance().setActive(true)
-        CastManager.shared.setup()
+
         #endif
     }
+
+    #if os(iOS)
+    @Environment(\.scenePhase) private var scenePhase
+    #endif
 
     var body: some Scene {
         WindowGroup {
             RootView()
+                .onAppear {
+                    #if os(iOS)
+                    PushNotificationManager.shared.requestPermission()
+                    clearBadge()
+                    #endif
+                }
+                #if os(iOS)
+                .onChange(of: scenePhase) { newPhase in
+                    if newPhase == .active {
+                        clearBadge()
+                    }
+                }
+                #endif
                 .environmentObject(MuxAPI.shared)
                 .environmentObject(auth)
                 .preferredColorScheme(.dark)
@@ -27,6 +50,20 @@ struct GospelOutreachTVApp: App {
                 }
         }
     }
+
+    #if os(iOS)
+    private func clearBadge() {
+        UNUserNotificationCenter.current().setBadgeCount(0)
+        // Tell the server to reset our badge counter
+        let device = UIDevice.current.name
+        guard let url = URL(string: "https://go-admin-production-6be4.up.railway.app/api/badge-reset") else { return }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try? JSONSerialization.data(withJSONObject: ["device": device])
+        URLSession.shared.dataTask(with: req).resume()
+    }
+    #endif
 }
 
 struct RootView: View {

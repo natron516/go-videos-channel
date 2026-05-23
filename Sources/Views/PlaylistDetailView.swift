@@ -100,6 +100,15 @@ struct PlaylistDetailView: View {
         }
         .navigationTitle(playlist?.name ?? "Playlist")
         .toolbar {
+            #if !os(tvOS)
+            ToolbarItem(placement: .automatic) {
+                Button {
+                    sharePlaylist()
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
+            }
+            #endif
             ToolbarItem(placement: .automatic) {
                 Button(role: .destructive) {
                     showDeleteConfirm = true
@@ -128,4 +137,27 @@ struct PlaylistDetailView: View {
         autoplay.setContext(asset: asset, playlist: playlistAssets)
         presentPlayer(url: url)
     }
+
+    #if !os(tvOS)
+    func sharePlaylist() {
+        guard let playlist = playlist else { return }
+        let assets = playlistAssets
+        var lines: [String] = []
+        lines.append("\(playlist.name) - GO Videos Playlist")
+        lines.append("")
+        for (i, asset) in assets.enumerated() {
+            lines.append("\(i + 1). \(asset.title)")
+        }
+        lines.append("")
+        lines.append("\(assets.count) video\(assets.count == 1 ? "" : "s") - Shared from GO Videos")
+        let text = lines.joined(separator: "\n")
+
+        let activityVC = UIActivityViewController(activityItems: [text], applicationActivities: nil)
+        guard let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let root = scene.windows.first?.rootViewController else { return }
+        activityVC.popoverPresentationController?.sourceView = root.view
+        activityVC.popoverPresentationController?.sourceRect = CGRect(x: root.view.bounds.midX, y: 0, width: 0, height: 0)
+        root.present(activityVC, animated: true)
+    }
+    #endif
 }
