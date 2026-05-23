@@ -363,13 +363,19 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
     static var managerKey = "playerButtonsManager"
 
     private weak var vc: UIViewController?
-    private weak var shareBtn: UIButton?
-
-    private weak var shareFab: UIButton?
-    private weak var shareFabBg: UIVisualEffectView?
+    private weak var shareBtn: UIView?
+    private weak var bookmarkView: ShareBookmarkView?
+    private var bookmarkCenterX: NSLayoutConstraint?
+    private var timeObserver: Any?
     private var hideTimer: Timer?
     private var dismissTimer: Timer?
     private var buttonWindow: UIWindow?
+
+    // Timebar horizontal bounds (points from screen edges)
+    private let timebarInsetLeft: CGFloat = 66
+    private let timebarInsetRight: CGFloat = 66
+    // Timebar vertical position from bottom of screen
+    private let timebarBottomOffset: CGFloat = 28
 
     init(vc: UIViewController) {
         self.vc = vc
@@ -379,7 +385,7 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
     func addButtons() {
         guard let vc = vc, let scene = vc.view.window?.windowScene else { return }
 
-        // Floating UIWindow - always above AVPlayerViewController's entire layer stack
+        // Floating UIWindow above AVPlayerViewController
         let window = PassthroughWindow(windowScene: scene)
         window.windowLevel = UIWindow.Level.alert + 1
         window.backgroundColor = .clear
@@ -391,40 +397,31 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         buttonWindow = window
         let container = rootVC.view!
 
-        // Bookmark-style share button that sits near the timebar
-        let btnHeight: CGFloat = 36
-        let btnWidth: CGFloat = 44
-        let fabBg = UIVisualEffectView(effect: UIBlurEffect(style: .systemThinMaterialDark))
-        fabBg.clipsToBounds = true
-        fabBg.layer.cornerRadius = 8
-        fabBg.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(fabBg)
-        self.shareFabBg = fabBg
+        // --- Bookmark share indicator that follows the playhead ---
+        let bookmark = ShareBookmarkView()
+        bookmark.translatesAutoresizingMaskIntoConstraints = false
+        bookmark.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
+        container.addSubview(bookmark)
+        self.bookmarkView = bookmark
+        self.shareBtn = bookmark
 
-        let fab = UIButton(type: .system)
-        fab.setImage(UIImage(systemName: "bookmark.circle.fill")?.withConfiguration(
-            UIImage.SymbolConfiguration(pointSize: 20, weight: .medium)
-        ), for: .normal)
-        fab.tintColor = .white
-        fab.translatesAutoresizingMaskIntoConstraints = false
-        fab.addTarget(self, action: #selector(handleShare), for: .touchUpInside)
-        fabBg.contentView.addSubview(fab)
-        self.shareFab = fab
-        self.shareBtn = fab
+        let centerX = bookmark.centerXAnchor.constraint(equalTo: container.leadingAnchor, constant: timebarInsetLeft)
+        self.bookmarkCenterX = centerX
 
-        // Position: right side, just above the transport bar / timebar area
-        // iPhone timebar is ~52pt from bottom safe area; iPad ~44pt
-        let bottomPad: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 8 : 52
         NSLayoutConstraint.activate([
-            fabBg.widthAnchor.constraint(equalToConstant: btnWidth),
-            fabBg.heightAnchor.constraint(equalToConstant: btnHeight),
-            fabBg.trailingAnchor.constraint(equalTo: container.safeAreaLayoutGuide.trailingAnchor, constant: -12),
-            fabBg.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -bottomPad),
-            fab.centerXAnchor.constraint(equalTo: fabBg.contentView.centerXAnchor),
-            fab.centerYAnchor.constraint(equalTo: fabBg.contentView.centerYAnchor),
-            fab.widthAnchor.constraint(equalToConstant: btnWidth),
-            fab.heightAnchor.constraint(equalToConstant: btnHeight),
+            bookmark.widthAnchor.constraint(equalToConstant: 30),
+            bookmark.heightAnchor.constraint(equalToConstant: 36),
+            bookmark.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -(timebarBottomOffset + 18)),
+            centerX,
         ])
+
+        // Periodic observer to move bookmark with playhead
+        if let playerVC = vc as? AVPlayerViewController, let player = playerVC.player {
+            let interval = CMTime(seconds: 0.25, preferredTimescale: 600)
+            timeObserver = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+                self?.updateBookmarkPosition(player: player)
+            }
+        }
 
         // Show/hide in sync with player controls
         vc.view.gestureRecognizers?.forEach { $0.cancelsTouchesInView = false }
@@ -442,25 +439,34 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         scheduleHide()
     }
 
-    private func findView(named fragment: String, in view: UIView) -> UIView? {
-        if NSStringFromClass(type(of: view)).contains(fragment) { return view }
-        for sub in view.subviews { if let f = findView(named: fragment, in: sub) { return f } }
-        return nil
+    private func updateBookmarkPosition(player: AVPlayer) {
+        guard let item = player.currentItem,
+              let container = bookmarkView?.superview else { return }
+        let dur = item.duration.seconds
+        guard dur.isFinite && dur > 0 else { return }
+        let cur = player.currentTime().seconds
+        let progress = min(max(cur / dur, 0), 1)
+
+        let screenW = container.bounds.width
+        let leftEdge = timebarInsetLeft
+        let rightEdge = screenW - timebarInsetRight
+        let trackWidth = rightEdge - leftEdge
+        let x = leftEdge + trackWidth * progress
+
+        bookmarkCenterX?.constant = x
     }
 
     // MARK: Visibility
 
     private func showButtons() {
-        shareFabBg?.alpha = 1
-        shareFab?.alpha = 1
+        bookmarkView?.alpha = 1
     }
 
     private func scheduleHide() {
         hideTimer?.invalidate()
         hideTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false) { [weak self] _ in
             UIView.animate(withDuration: 0.3) {
-                self?.shareFabBg?.alpha = 0
-                self?.shareFab?.alpha = 0
+                self?.bookmarkView?.alpha = 0
             }
         }
     }
@@ -473,6 +479,10 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
     private func tearDown() {
         hideTimer?.invalidate()
         dismissTimer?.invalidate()
+        if let obs = timeObserver, let playerVC = vc as? AVPlayerViewController {
+            playerVC.player?.removeTimeObserver(obs)
+        }
+        timeObserver = nil
         buttonWindow?.isHidden = true
         buttonWindow = nil
     }
@@ -515,6 +525,67 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
     func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
                            shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
         return true
+    }
+}
+
+// MARK: - Share Bookmark Button
+/// A bookmark-shaped button with a small share arrow, drawn via Core Graphics.
+private class ShareBookmarkView: UIControl {
+    private let bookmarkColor = UIColor.white
+    private let arrowColor = UIColor.black
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        backgroundColor = .clear
+        isOpaque = false
+    }
+
+    required init?(coder: NSCoder) { fatalError() }
+
+    override func draw(_ rect: CGRect) {
+        guard let ctx = UIGraphicsGetCurrentContext() else { return }
+        let w = rect.width, h = rect.height
+        let inset: CGFloat = 2
+        let bw = w - inset * 2  // bookmark width
+        let bh = h - inset * 2  // bookmark height
+        let bx = inset
+        let by = inset
+        let notchDepth: CGFloat = bh * 0.18
+
+        // Draw bookmark shape (rectangle with V notch at bottom)
+        let path = UIBezierPath()
+        path.move(to: CGPoint(x: bx, y: by))
+        path.addLine(to: CGPoint(x: bx + bw, y: by))
+        path.addLine(to: CGPoint(x: bx + bw, y: by + bh))
+        path.addLine(to: CGPoint(x: bx + bw / 2, y: by + bh - notchDepth))
+        path.addLine(to: CGPoint(x: bx, y: by + bh))
+        path.close()
+
+        // Semi-transparent white fill with slight shadow
+        ctx.setShadow(offset: CGSize(width: 0, height: 1), blur: 3, color: UIColor.black.withAlphaComponent(0.5).cgColor)
+        bookmarkColor.withAlphaComponent(0.9).setFill()
+        path.fill()
+        ctx.setShadow(offset: .zero, blur: 0)
+
+        // Draw small share arrow (↑) in the upper portion of the bookmark
+        let arrowSize: CGFloat = min(bw, bh) * 0.38
+        let arrowCX = bx + bw / 2
+        let arrowCY = by + bh * 0.35
+
+        let arrowPath = UIBezierPath()
+        // Arrow stem
+        arrowPath.move(to: CGPoint(x: arrowCX, y: arrowCY - arrowSize * 0.5))
+        arrowPath.addLine(to: CGPoint(x: arrowCX, y: arrowCY + arrowSize * 0.5))
+        // Arrow head
+        arrowPath.move(to: CGPoint(x: arrowCX - arrowSize * 0.35, y: arrowCY - arrowSize * 0.15))
+        arrowPath.addLine(to: CGPoint(x: arrowCX, y: arrowCY - arrowSize * 0.5))
+        arrowPath.addLine(to: CGPoint(x: arrowCX + arrowSize * 0.35, y: arrowCY - arrowSize * 0.15))
+
+        arrowPath.lineWidth = 2.0
+        arrowPath.lineCapStyle = .round
+        arrowPath.lineJoinStyle = .round
+        arrowColor.setStroke()
+        arrowPath.stroke()
     }
 }
 
