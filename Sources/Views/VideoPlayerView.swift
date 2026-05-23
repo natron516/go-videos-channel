@@ -408,11 +408,13 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         let centerX = bookmark.centerXAnchor.constraint(equalTo: container.leadingAnchor, constant: timebarInsetLeft)
         self.bookmarkCenterX = centerX
 
-        // Bottom of the bookmark tip sits just above the timeline bar
+        // Bottom tip sits just above the top edge of the timebar capsule
+        // iPhone timebar capsule: ~20pt from bottom to capsule bottom, ~44pt tall = ~64pt to capsule top
+        let aboveTimebar: CGFloat = UIDevice.current.userInterfaceIdiom == .pad ? 56 : 66
         NSLayoutConstraint.activate([
             bookmark.widthAnchor.constraint(equalToConstant: 26),
             bookmark.heightAnchor.constraint(equalToConstant: 32),
-            bookmark.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -(timebarBottomOffset + 6)),
+            bookmark.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -aboveTimebar),
             centerX,
         ])
 
