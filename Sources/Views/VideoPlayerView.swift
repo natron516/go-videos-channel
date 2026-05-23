@@ -408,11 +408,11 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         let centerX = bookmark.centerXAnchor.constraint(equalTo: container.leadingAnchor, constant: timebarInsetLeft)
         self.bookmarkCenterX = centerX
 
-        // Point hangs DOWN to touch the timebar; anchor by bottom edge
+        // Bottom of the bookmark tip sits just above the timeline bar
         NSLayoutConstraint.activate([
             bookmark.widthAnchor.constraint(equalToConstant: 26),
             bookmark.heightAnchor.constraint(equalToConstant: 32),
-            bookmark.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -(timebarBottomOffset - 2)),
+            bookmark.bottomAnchor.constraint(equalTo: container.bottomAnchor, constant: -(timebarBottomOffset + 6)),
             centerX,
         ])
 
@@ -457,15 +457,44 @@ private final class PlayerButtonsManager: NSObject, UIGestureRecognizerDelegate 
         bookmarkCenterX?.constant = x
     }
 
-    // MARK: Visibility
-    // Bookmark is always visible while the player is active — no auto-hide.
+    // MARK: Visibility — syncs with native player controls
 
     private func showButtons() {
-        bookmarkView?.alpha = 1
+        UIView.animate(withDuration: 0.2) { self.bookmarkView?.alpha = 1 }
+    }
+
+    private func hideButtons() {
+        UIView.animate(withDuration: 0.3) { self.bookmarkView?.alpha = 0 }
     }
 
     private func scheduleHide() {
-        // No-op: bookmark stays visible at all times
+        hideTimer?.invalidate()
+        hideTimer = Timer.scheduledTimer(withTimeInterval: 0.3, repeats: true) { [weak self] _ in
+            self?.syncWithPlayerControls()
+        }
+    }
+
+    /// Match bookmark visibility to the native AVPlayerViewController controls.
+    /// The system transport bar lives in a private subview; we detect its alpha.
+    private func syncWithPlayerControls() {
+        guard let vc = vc else { return }
+        let controlsVisible = isTransportBarVisible(in: vc.view)
+        let target: CGFloat = controlsVisible ? 1 : 0
+        if bookmarkView?.alpha != target {
+            UIView.animate(withDuration: 0.25) { self.bookmarkView?.alpha = target }
+        }
+    }
+
+    private func isTransportBarVisible(in view: UIView) -> Bool {
+        // Look for the transport controls container by class name fragment
+        let name = NSStringFromClass(type(of: view))
+        if name.contains("Transport") || name.contains("PlaybackControl") {
+            return view.alpha > 0.5 && !view.isHidden
+        }
+        for sub in view.subviews {
+            if isTransportBarVisible(in: sub) { return true }
+        }
+        return false
     }
 
     private func showAndKeep() {
