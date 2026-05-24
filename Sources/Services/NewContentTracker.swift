@@ -14,14 +14,7 @@ class NewContentTracker: ObservableObject {
 
     private let newContentWindow: TimeInterval = 3 * 24 * 60 * 60  // 3 days in seconds
 
-    /// Map of category → tab index for iOS tab bar badge dots
-    private let categoryTabIndex: [String: Int] = [
-        "sermon": 1,
-        "children": 2,
-        "music": 3,
-        "performance": 4,
-        "funzone": 5,
-    ]
+    /// (Legacy — tab badges now cleared, indicators are emoji in title)
 
     /// Call this whenever assets are fetched/refreshed.
     func update(assets: [MuxAsset]) {
@@ -55,8 +48,7 @@ class NewContentTracker: ObservableObject {
     }
 
     #if os(iOS)
-    /// Directly set/clear badge on UITabBar items via UIKit.
-    /// Retries briefly since SwiftUI's TabView may not be ready immediately.
+    /// Clear any stale UIKit badge dots — indicators are now emoji-only in tab titles.
     func applyTabBarBadges() {
         func apply() -> Bool {
             guard let scene = UIApplication.shared.connectedScenes
@@ -64,7 +56,6 @@ class NewContentTracker: ObservableObject {
                   let window = scene.windows.first
             else { return false }
 
-            // Try UITabBarController first, then search view hierarchy for UITabBar
             let items: [UITabBarItem]?
             if let tbc = window.rootViewController?.findTabBarController() {
                 items = tbc.tabBar.items
@@ -76,21 +67,14 @@ class NewContentTracker: ObservableObject {
 
             guard let items = items, !items.isEmpty else { return false }
 
-            for (category, tabIndex) in categoryTabIndex {
-                guard tabIndex < items.count else { continue }
-                let item = items[tabIndex]
-                if newCategories.contains(category) {
-                    item.badgeValue = " "
-                    item.badgeColor = .systemBlue
-                } else {
-                    item.badgeValue = nil
-                }
+            // Clear ALL badges — tab title emoji handles indicators now
+            for item in items {
+                item.badgeValue = nil
             }
             return true
         }
 
         if !apply() {
-            // Retry after a short delay — TabView may not be ready yet
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { _ = apply() }
         }
     }

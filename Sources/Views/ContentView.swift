@@ -277,7 +277,7 @@ struct TVSidebarItem: View {
             } else if hasNew {
                 Circle()
                     .fill(Color.blue)
-                    .frame(width: 8, height: 8)
+                    .frame(width: 10, height: 10)
             }
             Spacer()
         }
