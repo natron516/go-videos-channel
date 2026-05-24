@@ -9,6 +9,8 @@ struct IntroSplashView: View {
     @State private var player: AVPlayer?
     @ObservedObject private var watchTimer = WatchTimerManager.shared
 
+    @EnvironmentObject var api: MuxAPI
+
     var body: some View {
         ZStack {
             // Main content underneath
@@ -39,6 +41,12 @@ struct IntroSplashView: View {
         }
         .onAppear {
             setupPlayer()
+            // Prefetch ALL thumbnails during splash so every category loads instantly
+            Task {
+                let all = (try? await api.fetchAllAssets()) ?? []
+                prefetchThumbnails(all.map(\.thumbnailURL))
+                prefetchThumbnails(all.map(\.fallbackThumbnailURL))
+            }
         }
     }
 
