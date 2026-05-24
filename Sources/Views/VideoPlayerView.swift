@@ -371,12 +371,10 @@ private final class PlayerButtonsManager: NSObject {
     private var dismissTimer: Timer?
     private var buttonWindow: UIWindow?
 
-    // Timebar progress track insets (points from screen edges).
-    // Measured from iPhone AVPlayerViewController: the scrubber track starts
-    // after the elapsed-time label and ends before the remaining-time label.
-    private let trackInsetLeft: CGFloat = 76
-    private let trackInsetRight: CGFloat = 76
     private var visibilityPoller: Timer?
+    // Dynamic insets computed from video duration (longer labels = wider insets)
+    private var trackInsetLeft: CGFloat = 90
+    private var trackInsetRight: CGFloat = 100
 
     init(vc: UIViewController) {
         self.vc = vc
@@ -441,11 +439,39 @@ private final class PlayerButtonsManager: NSObject {
         }
     }
 
+    private var insetsComputed = false
+
+    /// Compute track insets based on video duration.
+    /// Longer videos show h:mm:ss labels which are wider than m:ss.
+    private func computeInsets(duration: Double) {
+        guard !insetsComputed else { return }
+        insetsComputed = true
+
+        let isPad = UIDevice.current.userInterfaceIdiom == .pad
+
+        if duration >= 3600 {
+            // h:mm:ss labels (e.g. "2:07:49" / "-2:08:58") — widest
+            trackInsetLeft  = isPad ? 110 : 105
+            trackInsetRight = isPad ? 120 : 115
+        } else if duration >= 600 {
+            // mm:ss with double-digit minutes (e.g. "12:34" / "-45:12")
+            trackInsetLeft  = isPad ? 90 : 85
+            trackInsetRight = isPad ? 100 : 95
+        } else {
+            // m:ss short labels (e.g. "1:23" / "-4:56")
+            trackInsetLeft  = isPad ? 80 : 76
+            trackInsetRight = isPad ? 90 : 86
+        }
+    }
+
     private func updateBookmarkPosition(player: AVPlayer) {
         guard let item = player.currentItem,
               let container = bookmarkView?.superview else { return }
         let dur = item.duration.seconds
         guard dur.isFinite && dur > 0 else { return }
+
+        computeInsets(duration: dur)
+
         let cur = player.currentTime().seconds
         let progress = min(max(cur / dur, 0), 1)
 
