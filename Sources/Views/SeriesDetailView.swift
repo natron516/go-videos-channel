@@ -194,18 +194,21 @@ struct SeriesDetailView: View {
         let isVideo = episode.mediaType == "video"
         if isVideo {
             guard let url = URL(string: episode.audioUrl) else { return }
-            presentPlayer(url: url)
-            // For video autoplay, we set up a notification observer
+            // Set up autoplay handler BEFORE presenting so the video player picks it up
             if autoplay {
-                setupVideoAutoplay(for: episode)
+                AutoplayManager.shared.customNextHandler = { [self] in
+                    playNextEpisode(after: episode)
+                }
+            } else {
+                AutoplayManager.shared.customNextHandler = nil
             }
+            presentPlayer(url: url)
         } else {
             audioPlayer.play(
                 url: episode.audioUrl,
                 title: episode.title,
                 artist: episode.artist
             )
-            // Set up audio autoplay callback
             if autoplay {
                 audioPlayer.onFinish = { [self] in
                     playNextEpisode(after: episode)
@@ -218,25 +221,13 @@ struct SeriesDetailView: View {
 
     private func playNextEpisode(after episode: GOAudioAsset) {
         guard let currentIndex = episodes.firstIndex(where: { $0.id == episode.id }),
-              currentIndex + 1 < episodes.count else { return }
+              currentIndex + 1 < episodes.count else {
+            // No more episodes — dismiss the player
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { dismissTopPlayer() }
+            return
+        }
         let next = episodes[currentIndex + 1]
         playEpisode(next)
-    }
-
-    private func setupVideoAutoplay(for episode: GOAudioAsset) {
-        // Listen for when the video player dismisses/finishes
-        NotificationCenter.default.addObserver(
-            forName: .AVPlayerItemDidPlayToEndTime,
-            object: nil,
-            queue: .main
-        ) { [self] _ in
-            // Remove this one-shot observer
-            NotificationCenter.default.removeObserver(self, name: .AVPlayerItemDidPlayToEndTime, object: nil)
-            // Small delay to let the player dismiss
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                self.playNextEpisode(after: episode)
-            }
-        }
     }
 }
 

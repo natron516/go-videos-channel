@@ -20,6 +20,9 @@ class AutoplayManager: ObservableObject {
     private(set) var preloadedItem: AVPlayerItem?
     private(set) var preloadedURL: URL?
 
+    /// Custom handler for series/podcast video autoplay — takes priority over playlist
+    var customNextHandler: (() -> Void)?
+
     private init() {
         self.enabled = UserDefaults.standard.bool(forKey: "autoplay")
         self.shuffle = UserDefaults.standard.bool(forKey: "shuffle")
@@ -50,6 +53,11 @@ class AutoplayManager: ObservableObject {
 
     /// Called when the current video finishes playing.
     func handleVideoEnd() {
+        if let handler = customNextHandler {
+            customNextHandler = nil
+            handler()
+            return
+        }
         if enabled {
             playNext()
         } else {
