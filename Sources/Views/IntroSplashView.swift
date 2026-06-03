@@ -47,6 +47,10 @@ struct IntroSplashView: View {
                 prefetchThumbnails(all.map(\.thumbnailURL))
                 prefetchThumbnails(all.map(\.fallbackThumbnailURL))
             }
+            // Preload all tab content (books, articles, podcasts, audio, series, music)
+            Task {
+                await ContentPreloader.shared.preloadAll()
+            }
         }
     }
 

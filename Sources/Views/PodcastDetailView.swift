@@ -1,12 +1,11 @@
 import SwiftUI
 
-#if !os(tvOS)
-
 struct PodcastDetailView: View {
     let podcast: GOPodcast
 
     @ObservedObject private var contentAPI = ContentAPI.shared
     @ObservedObject private var audioPlayer = AudioPlayerManager.shared
+    @AppStorage("podcastAutoplay") private var autoplay: Bool = true
 
     @State private var episodes: [GOPodcastEpisode] = []
     @State private var isLoading = true
@@ -97,11 +96,7 @@ struct PodcastDetailView: View {
                         LazyVStack(spacing: 0) {
                             ForEach(episodes) { episode in
                                 EpisodeRow(episode: episode, podcastTitle: podcast.title) {
-                                    audioPlayer.play(
-                                        url: episode.audioUrl,
-                                        title: episode.title,
-                                        artist: podcast.title
-                                    )
+                                    playEpisode(episode)
                                 }
                             }
                         }
@@ -120,8 +115,43 @@ struct PodcastDetailView: View {
             }
         }
         .navigationTitle(podcast.title)
+        #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .toolbar {
+            ToolbarItemGroup(placement: .automatic) {
+                Button { autoplay.toggle() } label: {
+                    Image(systemName: autoplay ? "forward.end.fill" : "forward.end")
+                        .foregroundColor(autoplay ? .blue : .secondary)
+                }
+                .accessibilityLabel(autoplay ? "Autoplay On" : "Autoplay Off")
+            }
+        }
         .task { await load() }
+    }
+
+    // MARK: - Playback
+
+    private func playEpisode(_ episode: GOPodcastEpisode) {
+        audioPlayer.play(
+            url: episode.audioUrl,
+            title: episode.title,
+            artist: podcast.title
+        )
+        if autoplay {
+            audioPlayer.onFinish = { [self] in
+                playNextEpisode(after: episode)
+            }
+        } else {
+            audioPlayer.onFinish = nil
+        }
+    }
+
+    private func playNextEpisode(after episode: GOPodcastEpisode) {
+        guard let currentIndex = episodes.firstIndex(where: { $0.id == episode.id }),
+              currentIndex + 1 < episodes.count else { return }
+        let next = episodes[currentIndex + 1]
+        playEpisode(next)
     }
 
     private func load() async {
@@ -228,4 +258,3 @@ struct EpisodeRow: View {
     }
 }
 
-#endif

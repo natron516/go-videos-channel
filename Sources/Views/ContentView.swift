@@ -228,7 +228,7 @@ struct TVSidebar: View {
 
             // Categories
             ForEach(TVSection.allCases.filter {
-                $0 != .listen && ($0 != .privateContent || auth.hasPrivateAccess)
+                $0 != .music && ($0 != .privateContent || auth.hasPrivateAccess)
             }) { section in
                 let isLiveSection = section.assetCategory != nil &&
                     (liveManager.liveAsset?.category ?? "") == section.assetCategory
@@ -412,6 +412,39 @@ struct TVSidebarItem: View {
     }
 }
 
+// ── tvOS Listen (Podcasts + Audio) ────────────────────────
+enum TVListenSegment: String, CaseIterable {
+    case podcasts = "Podcasts"
+    case audio = "Audio"
+}
+
+struct TVListenView: View {
+    @State private var segment: TVListenSegment = .podcasts
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Segment picker
+            Picker("Listen", selection: $segment) {
+                ForEach(TVListenSegment.allCases, id: \.self) { seg in
+                    Text(seg.rawValue).tag(seg)
+                }
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 40)
+            .padding(.top, 24)
+            .padding(.bottom, 16)
+
+            // Content
+            switch segment {
+            case .podcasts:
+                PodcastListView()
+            case .audio:
+                AudioListView()
+            }
+        }
+    }
+}
+
 // ── Main tvOS layout ──────────────────────────────────────
 struct TVContentView: View {
     @EnvironmentObject var api: MuxAPI
@@ -498,7 +531,7 @@ struct TVContentView: View {
         case .music:       CategoryLibraryView(title: "Music",        category: "music",       icon: "music.note.tv.fill")
         case .performance: CategoryLibraryView(title: "Shows",        category: "performance", icon: "theatermasks.fill")
         case .funzone:     CategoryLibraryView(title: "FunZone",      category: "funzone",     icon: "party.popper.fill")
-        case .listen:      AppleMusicView()
+        case .listen:      TVListenView()
         case .playlists:   PlaylistsView()
         case .search:      SearchView()
         case .privateContent: CategoryLibraryView(title: "Private", category: "hidden", icon: "lock.fill", includePrivate: true)

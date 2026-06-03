@@ -103,6 +103,14 @@ class ContentAPI: ObservableObject {
         let wrapper = try JSONDecoder().decode(SeriesEpisodesResponse.self, from: data)
         return wrapper.episodes.sorted { ($0.episodeNumber ?? 0) < ($1.episodeNumber ?? 0) }
     }
+
+    // MARK: - Music Config
+
+    func fetchMusicConfig() async throws -> MusicConfig {
+        let req = request(path: "/api/music")
+        let (data, _) = try await URLSession.shared.data(for: req)
+        return try JSONDecoder().decode(MusicConfig.self, from: data)
+    }
 }
 
 // MARK: - Response wrappers
@@ -133,4 +141,27 @@ private struct SeriesResponse: Decodable {
 
 private struct SeriesEpisodesResponse: Decodable {
     let episodes: [GOAudioAsset]
+}
+
+// MARK: - Music Config
+
+struct MusicConfigAlbum: Decodable {
+    let albumId: String
+    let title: String?
+    let artist: String?
+    let type: String?
+    let artworkUrl: String?
+}
+
+struct MusicConfigPlaylist: Decodable {
+    let playlistId: String
+    let title: String?
+    let curatorName: String?
+    let artworkUrl: String?
+    let description: String?
+}
+
+struct MusicConfig: Decodable {
+    let albums: [MusicConfigAlbum]?
+    let playlists: [MusicConfigPlaylist]?
 }

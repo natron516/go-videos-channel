@@ -17,6 +17,10 @@ struct PlaylistItem: Identifiable, Codable, Equatable {
     var isAudio: Bool { type == "audio" }
     var isBook: Bool { type == "book" }
     var isArticle: Bool { type == "article" }
+    var isMusic: Bool { type == "music" || type == "music-track" || type == "music-playlist" }
+    var isMusicAlbum: Bool { type == "music" }
+    var isMusicTrack: Bool { type == "music-track" }
+    var isMusicPlaylist: Bool { type == "music-playlist" }
 }
 
 // MARK: - Playlist

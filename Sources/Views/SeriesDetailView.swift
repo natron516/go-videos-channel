@@ -1,8 +1,6 @@
 import SwiftUI
 import AVKit
 
-#if !os(tvOS)
-
 struct SeriesDetailView: View {
     let series: GOSeries
 
@@ -88,11 +86,13 @@ struct SeriesDetailView: View {
             }
         }
         .navigationTitle(series.title)
+        #if !os(tvOS)
         .navigationBarTitleDisplayMode(.inline)
         .toolbarBackground(.visible, for: .navigationBar)
         .toolbarBackground(Color.black.opacity(0.85), for: .navigationBar)
+        #endif
         .toolbar {
-            ToolbarItemGroup(placement: .navigationBarTrailing) {
+            ToolbarItemGroup(placement: .automatic) {
                 Button { autoplay.toggle() } label: {
                     Image(systemName: autoplay ? "forward.end.fill" : "forward.end")
                         .foregroundColor(autoplay ? .blue : .secondary)
@@ -339,5 +339,3 @@ struct SeriesEpisodeRow: View {
         .buttonStyle(.plain)
     }
 }
-
-#endif

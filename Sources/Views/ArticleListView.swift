@@ -70,6 +70,11 @@ struct ArticleListView: View {
     }
 
     private func load() async {
+        if let cached = ContentPreloader.shared.articles {
+            articles = cached
+            isLoading = false
+            return
+        }
         isLoading = true
         error = nil
         do {

@@ -1,7 +1,5 @@
 import SwiftUI
 
-#if !os(tvOS)
-
 struct AudioListView: View {
     @ObservedObject private var contentAPI = ContentAPI.shared
     @ObservedObject private var audioPlayer = AudioPlayerManager.shared
@@ -11,9 +9,13 @@ struct AudioListView: View {
     @State private var error: String?
 
     var columns: [GridItem] {
+        #if os(tvOS)
+        Array(repeating: GridItem(.flexible(), spacing: 24), count: 4)
+        #else
         UIDevice.current.userInterfaceIdiom == .pad
             ? Array(repeating: GridItem(.flexible(), spacing: 20), count: 3)
             : Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
+        #endif
     }
 
     // Singles: audio assets NOT in any series
@@ -95,6 +97,11 @@ struct AudioListView: View {
     }
 
     private func load() async {
+        if let cached = ContentPreloader.shared.audioAssets {
+            allAudioAssets = cached
+            isLoading = false
+            return
+        }
         isLoading = true
         error = nil
         do {
@@ -229,4 +236,3 @@ struct AudioMiniPlayer: View {
     }
 }
 
-#endif

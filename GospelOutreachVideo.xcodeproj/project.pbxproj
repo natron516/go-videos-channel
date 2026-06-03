@@ -47,6 +47,7 @@
 		4135906417B28EBCB1369087 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 0C766F2606180BCE45350973 /* FirebaseRemoteConfig */; };
 		421227518220D54F05B3B16C /* PlaylistsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C30B2C470C39AA68B496C693 /* PlaylistsView.swift */; };
 		466C17651CF896882A548C72 /* FeaturedManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2767AA6ECF9AC8819158898 /* FeaturedManager.swift */; };
+		472E1B7A7EFE5642262DA44E /* ContentPreloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC3C270807B33068E00B1DE /* ContentPreloader.swift */; };
 		4A2A3E01606F2DA2491CB582 /* intro_splash.mp4 in Resources */ = {isa = PBXBuildFile; fileRef = F287C5EA0C821E00E6654798 /* intro_splash.mp4 */; };
 		4F199AC780543DEB2EE61372 /* PushNotificationManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E807F1A31B58ADAB32E31DED /* PushNotificationManager.swift */; };
 		5056555187B35A2163CA407C /* IntroSplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BD4BB34D3DA66E0357FBA38 /* IntroSplashView.swift */; };
@@ -132,6 +133,7 @@
 		CB5A8B050FCAD13F8B155DDB /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1EB98D4E713668484DE5C7A0 /* HomeView.swift */; };
 		CF4ED2A8278C649791EDCC97 /* ArticleDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB3017BECF356F9CC6C48D27 /* ArticleDetailView.swift */; };
 		D16AC6ED72902428AA035328 /* TVLoginView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 405FD0F618D0C129F32D7305 /* TVLoginView.swift */; };
+		D45C3885194E55BF3C14A064 /* ContentPreloader.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAC3C270807B33068E00B1DE /* ContentPreloader.swift */; };
 		D872DB2B904394F5A149CB3E /* LinkTVView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F99CAF0518F07F240E8F996 /* LinkTVView.swift */; };
 		D8BA8BFA91F29D86EC974FA8 /* AudioDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69EA392FA8C68A25E0C96640 /* AudioDownloadManager.swift */; };
 		DD7B191C841786D7CD1DFB4C /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 670782E11CBDCC9BFCA18086 /* GoogleService-Info.plist */; };
@@ -220,6 +222,7 @@
 		C30B2C470C39AA68B496C693 /* PlaylistsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaylistsView.swift; sourceTree = "<group>"; };
 		C69D01F2C33DBCAFA9788C80 /* AppleMusicService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleMusicService.swift; sourceTree = "<group>"; };
 		CAAEDC6B8C6CDB0A915787E8 /* BookDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BookDetailView.swift; sourceTree = "<group>"; };
+		CAC3C270807B33068E00B1DE /* ContentPreloader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentPreloader.swift; sourceTree = "<group>"; };
 		CB3017BECF356F9CC6C48D27 /* ArticleDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArticleDetailView.swift; sourceTree = "<group>"; };
 		CF44774A7E29CBA566F7B616 /* AuthService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthService.swift; sourceTree = "<group>"; };
 		D0520712CBE534DFD3E3EC9B /* AudioPlayerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioPlayerManager.swift; sourceTree = "<group>"; };
@@ -293,6 +296,7 @@
 				CF44774A7E29CBA566F7B616 /* AuthService.swift */,
 				3B831D5275942142F1361C54 /* AutoplayManager.swift */,
 				10672F796D4B8EEECEC536BB /* ContentAPI.swift */,
+				CAC3C270807B33068E00B1DE /* ContentPreloader.swift */,
 				C2330CEFA36FEEF6C6AC5350 /* DeepLinkHandler.swift */,
 				D2767AA6ECF9AC8819158898 /* FeaturedManager.swift */,
 				E911BC137B356D7EF221459E /* ForceUpdateService.swift */,
@@ -549,6 +553,7 @@
 				0747A3F4CDE3D84F8F768D6D /* CachedAsyncImage.swift in Sources */,
 				A4CAB4FD63B4E28C6F19D3BA /* CategoryLibraryView.swift in Sources */,
 				C2F474622ACBA3F6FCA55553 /* ContentAPI.swift in Sources */,
+				472E1B7A7EFE5642262DA44E /* ContentPreloader.swift in Sources */,
 				76FF919D5B0752221F11D7EB /* ContentView.swift in Sources */,
 				0C01E4D8F2FA2DBE82323BC5 /* DeepLinkHandler.swift in Sources */,
 				FC1440C98C655BB4183A2942 /* DownloadsView.swift in Sources */,
@@ -621,6 +626,7 @@
 				C692B79778E5BD2AD49854BB /* CachedAsyncImage.swift in Sources */,
 				83ECE79C7559D1908BC66E68 /* CategoryLibraryView.swift in Sources */,
 				72D408B2DC146D7981CD28BD /* ContentAPI.swift in Sources */,
+				D45C3885194E55BF3C14A064 /* ContentPreloader.swift in Sources */,
 				F175EC4FF1E90CA2AD1DE46D /* ContentView.swift in Sources */,
 				1A7CC50D550568A3C55AE869 /* DeepLinkHandler.swift in Sources */,
 				5DC0E873799798B15A01B065 /* DownloadsView.swift in Sources */,
@@ -678,7 +684,7 @@
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_ENTITLEMENTS = "Sources/GospelOutreach-tvOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 106;
+				CURRENT_PROJECT_VERSION = 107;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Sources/Info-tvOS.plist";
@@ -766,7 +772,7 @@
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_ENTITLEMENTS = "Sources/GospelOutreach-tvOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 106;
+				CURRENT_PROJECT_VERSION = 107;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = "Sources/Info-tvOS.plist";
@@ -790,7 +796,7 @@
 				CODE_SIGN_ENTITLEMENTS = Sources/GospelOutreach.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 106;
+				CURRENT_PROJECT_VERSION = 107;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Sources/Info.plist;
@@ -874,7 +880,7 @@
 				CODE_SIGN_ENTITLEMENTS = Sources/GospelOutreach.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 106;
+				CURRENT_PROJECT_VERSION = 107;
 				DEVELOPMENT_TEAM = N93KX6VC9R;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Sources/Info.plist;

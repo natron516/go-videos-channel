@@ -48,9 +48,9 @@ struct WatchView: View {
         if let catKey = selectedCategory.assetCategory {
             return allAssets.filter { $0.category == catKey }
         }
-        // "All" — always exclude hidden from the All view (use Private pill to see those)
+        // "All" — exclude hidden AND sermons (sermons are behind PIN lock)
         return allAssets.filter { asset in
-            asset.category != nil && asset.category != "hidden"
+            asset.category != nil && asset.category != "hidden" && asset.category != "sermon"
         }
     }
 

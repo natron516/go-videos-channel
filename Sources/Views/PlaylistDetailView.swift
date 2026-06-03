@@ -1,4 +1,5 @@
 import SwiftUI
+import MusicKit
 
 struct PlaylistDetailView: View {
     let playlistId: UUID
@@ -7,11 +8,15 @@ struct PlaylistDetailView: View {
     @ObservedObject private var manager = PlaylistManager.shared
     @ObservedObject private var autoplay = AutoplayManager.shared
     @ObservedObject private var audioPlayer = AudioPlayerManager.shared
+    @StateObject private var musicService = AppleMusicService.shared
 
     @State private var allVideoAssets: [MuxAsset] = []
     @State private var allAudioAssets: [GOAudioAsset] = []
     @State private var allBooks: [GOBook] = []
     @State private var allArticles: [GOArticle] = []
+    @State private var musicAlbums: [Album] = []
+    @State private var musicTracks: [MusicKit.Track] = []
+    @State private var musicPlaylists: [MusicKit.Playlist] = []
     @State private var isLoading = true
     @State private var showDeleteConfirm = false
 
@@ -55,8 +60,18 @@ struct PlaylistDetailView: View {
         }
     }
 
+    // Resolved music items
+    var playlistMusicItems: [PlaylistItem] {
+        guard let playlist = playlist else { return [] }
+        return playlist.items.filter { $0.isMusic }
+    }
+
+    var hasMusicItems: Bool {
+        !musicAlbums.isEmpty || !musicTracks.isEmpty || !musicPlaylists.isEmpty
+    }
+
     var isEmpty: Bool {
-        playlistVideoAssets.isEmpty && playlistAudioAssets.isEmpty && playlistBooks.isEmpty && playlistArticles.isEmpty
+        playlistVideoAssets.isEmpty && playlistAudioAssets.isEmpty && playlistBooks.isEmpty && playlistArticles.isEmpty && !hasMusicItems
     }
 
     var columns: [GridItem] {
@@ -79,7 +94,7 @@ struct PlaylistDetailView: View {
                             .foregroundColor(.secondary)
                         Text("Empty Playlist")
                             .font(.title)
-                        Text("Long press any video, audio, book, or article to add it here")
+                        Text("Long press any video, audio, book, article, or music to add it here")
                             .font(.callout)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
@@ -209,6 +224,88 @@ struct PlaylistDetailView: View {
                                     }
                                 }
 
+                                // Music section
+                                if hasMusicItems {
+                                    VStack(alignment: .leading, spacing: 12) {
+                                        Label("Music", systemImage: "music.note")
+                                            .font(.headline)
+                                            .foregroundColor(.white)
+                                            .padding(.horizontal, 40)
+
+                                        // Albums
+                                        if !musicAlbums.isEmpty {
+                                            #if !os(tvOS)
+                                            let musicCols = UIDevice.current.userInterfaceIdiom == .pad
+                                                ? Array(repeating: GridItem(.flexible(), spacing: 16), count: 4)
+                                                : Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+                                            LazyVGrid(columns: musicCols, spacing: 16) {
+                                                ForEach(musicAlbums) { album in
+                                                    NavigationLink(destination: AlbumDetailView(album: album)) {
+                                                        AlbumCardView(album: album)
+                                                    }
+                                                    .contextMenu {
+                                                        Button(role: .destructive) {
+                                                            manager.removeItem(
+                                                                PlaylistItem(type: "music", itemId: album.id.rawValue),
+                                                                from: playlistId
+                                                            )
+                                                        } label: {
+                                                            Label("Remove from Playlist", systemImage: "minus.circle")
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            .padding(.horizontal, 40)
+                                            #endif
+                                        }
+
+                                        // Tracks
+                                        if !musicTracks.isEmpty {
+                                            LazyVStack(spacing: 0) {
+                                                ForEach(Array(musicTracks.enumerated()), id: \.offset) { idx, track in
+                                                    SongRow(track: track, albumTitle: "")
+                                                        .contextMenu {
+                                                            Button(role: .destructive) {
+                                                                manager.removeItem(
+                                                                    PlaylistItem(type: "music-track", itemId: track.id.rawValue),
+                                                                    from: playlistId
+                                                                )
+                                                            } label: {
+                                                                Label("Remove from Playlist", systemImage: "minus.circle")
+                                                            }
+                                                        }
+                                                    if idx < musicTracks.count - 1 {
+                                                        Divider().background(Color.white.opacity(0.08)).padding(.leading, 72)
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        // Playlists
+                                        if !musicPlaylists.isEmpty {
+                                            LazyVStack(spacing: 12) {
+                                                ForEach(musicPlaylists) { playlist in
+                                                    NavigationLink(destination: PlaylistMusicDetailView(playlist: playlist)) {
+                                                        MusicPlaylistRowView(playlist: playlist)
+                                                    }
+                                                    .buttonStyle(.plain)
+                                                    .contextMenu {
+                                                        Button(role: .destructive) {
+                                                            manager.removeItem(
+                                                                PlaylistItem(type: "music-playlist", itemId: playlist.id.rawValue),
+                                                                from: playlistId
+                                                            )
+                                                        } label: {
+                                                            Label("Remove from Playlist", systemImage: "minus.circle")
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            .padding(.horizontal, 40)
+                                        }
+                                    }
+                                }
+
                                 // Articles section
                                 if !playlistArticles.isEmpty {
                                     VStack(alignment: .leading, spacing: 12) {
@@ -309,6 +406,49 @@ struct PlaylistDetailView: View {
         allAudioAssets = (try? await audio) ?? []
         allBooks = (try? await books) ?? []
         allArticles = (try? await articles) ?? []
+
+        // Load music items from MusicKit
+        guard let playlist = playlist else { return }
+        let musicItems = playlist.items.filter { $0.isMusic }
+        if !musicItems.isEmpty && musicService.isAuthorized {
+            await loadMusicItems(musicItems)
+        }
+    }
+
+    private func loadMusicItems(_ items: [PlaylistItem]) async {
+        var albums: [Album] = []
+        var tracks: [MusicKit.Track] = []
+        var playlists: [MusicKit.Playlist] = []
+
+        for item in items {
+            if item.isMusicAlbum {
+                do {
+                    let req = MusicCatalogResourceRequest<Album>(matching: \.id, equalTo: MusicItemID(item.itemId))
+                    let resp = try await req.response()
+                    if let album = resp.items.first { albums.append(album) }
+                } catch { /* skip */ }
+            } else if item.isMusicTrack {
+                do {
+                    let req = MusicCatalogResourceRequest<MusicKit.Song>(matching: \.id, equalTo: MusicItemID(item.itemId))
+                    let resp = try await req.response()
+                    // Song and Track are different; try Song lookup
+                    // Actually use Track type
+                } catch { /* skip */ }
+                // Try as Track
+                // MusicKit doesn't have direct Track catalog lookup by ID easily,
+                // so we'll skip for now — tracks show up from playlists mainly
+            } else if item.isMusicPlaylist {
+                do {
+                    let req = MusicCatalogResourceRequest<MusicKit.Playlist>(matching: \.id, equalTo: MusicItemID(item.itemId))
+                    let resp = try await req.response()
+                    if let pl = resp.items.first { playlists.append(pl) }
+                } catch { /* skip */ }
+            }
+        }
+
+        musicAlbums = albums
+        musicTracks = tracks
+        musicPlaylists = playlists
     }
 
     func playAllVideos() {

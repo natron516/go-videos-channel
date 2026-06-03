@@ -72,10 +72,18 @@ struct AppleMusicView: View {
     enum MusicSegment: String, CaseIterable {
         case albums = "Albums"
         case songs = "Songs"
+        case artists = "Artists"
+        case playlists = "Playlists"
     }
     @State private var segment: MusicSegment = .albums
     @State private var musicSearchText = ""
     @State private var activeLoadTask: Task<Void, Never>? = nil
+    @State private var curatedPlaylists: [MusicKit.Playlist] = []
+    @State private var playlistsLoading = false
+    @State private var musicConfig: MusicConfig? = nil
+    @State private var artists: [ArtistGroup] = []
+    @State private var addToPlaylistItem: PlaylistItem? = nil
+    @State private var showAddToPlaylist = false
 
     var body: some View {
         ZStack {
@@ -130,6 +138,11 @@ struct AppleMusicView: View {
             if music.isAuthorized {
                 activeLoadTask = Task { await loadCurated() }
                 await activeLoadTask?.value
+            }
+        }
+        .sheet(isPresented: $showAddToPlaylist) {
+            if let item = addToPlaylistItem {
+                AddToPlaylistView(mediaType: item.type, mediaId: item.itemId)
             }
         }
     }
@@ -270,15 +283,28 @@ struct AppleMusicView: View {
                 .cornerRadius(10)
                 .padding(.horizontal, 16)
 
-                // Segment: Albums / Songs
+                // Segment: Albums / Songs / Artists / Playlists
                 HStack {
-                    Picker("", selection: $segment) {
-                        ForEach(MusicSegment.allCases, id: \.self) { s in
-                            Text(s.rawValue).tag(s)
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 0) {
+                            ForEach(MusicSegment.allCases, id: \.self) { s in
+                                Button {
+                                    withAnimation(.easeInOut(duration: 0.15)) { segment = s }
+                                } label: {
+                                    Text(s.rawValue)
+                                        .font(.subheadline.weight(segment == s ? .bold : .medium))
+                                        .foregroundColor(segment == s ? .white : .secondary)
+                                        .padding(.horizontal, 14)
+                                        .padding(.vertical, 7)
+                                        .background(
+                                            Capsule()
+                                                .fill(segment == s ? Color.pink.opacity(0.3) : Color.clear)
+                                        )
+                                }
+                                .buttonStyle(.plain)
+                            }
                         }
                     }
-                    .pickerStyle(.segmented)
-                    .frame(width: 200)
 
                     Spacer()
 
@@ -296,8 +322,12 @@ struct AppleMusicView: View {
 
                 if segment == .albums {
                     albumsSection
-                } else {
+                } else if segment == .songs {
                     songsSection
+                } else if segment == .artists {
+                    artistsSection
+                } else {
+                    playlistsSection
                 }
             }
             .padding(.vertical, 16)
@@ -324,6 +354,14 @@ struct AppleMusicView: View {
                             AlbumListRow(album: album)
                         }
                         .buttonStyle(.plain)
+                        .contextMenu {
+                            Button {
+                                addToPlaylistItem = PlaylistItem(type: "music", itemId: album.id.rawValue)
+                                showAddToPlaylist = true
+                            } label: {
+                                Label("Add to My Playlists", systemImage: "text.badge.plus")
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -341,12 +379,118 @@ struct AppleMusicView: View {
                         NavigationLink(destination: AlbumDetailView(album: album)) {
                             AlbumCardView(album: album)
                         }
+                        .contextMenu {
+                            Button {
+                                addToPlaylistItem = PlaylistItem(type: "music", itemId: album.id.rawValue)
+                                showAddToPlaylist = true
+                            } label: {
+                                Label("Add to My Playlists", systemImage: "text.badge.plus")
+                            }
+                        }
                         #if os(tvOS)
                         .buttonStyle(TVPlainAlbumButtonStyle())
                         #endif
                     }
                 }
                 .padding(.horizontal, 16)
+            }
+        }
+    }
+
+    // MARK: - Artists Section
+
+    private var filteredArtists: [ArtistGroup] {
+        guard !musicSearchText.isEmpty else { return artists }
+        let q = musicSearchText.lowercased()
+        return artists.filter { $0.name.lowercased().contains(q) }
+    }
+
+    private var artistsSection: some View {
+        Group {
+            if artists.isEmpty {
+                VStack(spacing: 12) {
+                    ProgressView("Grouping by artist...")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(40)
+                .task { buildArtistGroups() }
+            } else if filteredArtists.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 40))
+                        .foregroundColor(.secondary)
+                    Text("No matching artists")
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(40)
+            } else {
+                LazyVStack(spacing: 12) {
+                    ForEach(filteredArtists) { artist in
+                        NavigationLink(destination: ArtistAlbumsView(artist: artist, addToPlaylistItem: $addToPlaylistItem, showAddToPlaylist: $showAddToPlaylist)) {
+                            ArtistRowView(artist: artist)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+    }
+
+    private func buildArtistGroups() {
+        var grouped: [String: [Album]] = [:]
+        for album in albums {
+            let name = album.artistName.isEmpty ? "Unknown Artist" : album.artistName
+            grouped[name, default: []].append(album)
+        }
+        artists = grouped.map { ArtistGroup(name: $0.key, albums: $0.value) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    // MARK: - Playlists Section
+
+    private var playlistsSection: some View {
+        Group {
+            if playlistsLoading {
+                VStack(spacing: 12) {
+                    ProgressView("Loading playlists...")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(40)
+            } else if curatedPlaylists.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "music.note.list")
+                        .font(.system(size: 40))
+                        .foregroundColor(.secondary)
+                    Text("No playlists yet")
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(40)
+            } else {
+                LazyVStack(spacing: 12) {
+                    ForEach(curatedPlaylists) { playlist in
+                        NavigationLink(destination: PlaylistMusicDetailView(playlist: playlist)) {
+                            MusicPlaylistRowView(playlist: playlist)
+                        }
+                        .buttonStyle(.plain)
+                        .contextMenu {
+                            Button {
+                                addToPlaylistItem = PlaylistItem(type: "music-playlist", itemId: playlist.id.rawValue)
+                                showAddToPlaylist = true
+                            } label: {
+                                Label("Add to My Playlists", systemImage: "text.badge.plus")
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        .task {
+            if curatedPlaylists.isEmpty {
+                await loadCuratedPlaylists()
             }
         }
     }
@@ -375,6 +519,20 @@ struct AppleMusicView: View {
                 LazyVStack(spacing: 0) {
                     ForEach(Array(filtered.enumerated()), id: \.offset) { idx, item in
                         SongRow(track: item.track, albumTitle: item.album.title)
+                            .contextMenu {
+                                Button {
+                                    addToPlaylistItem = PlaylistItem(type: "music-track", itemId: item.track.id.rawValue)
+                                    showAddToPlaylist = true
+                                } label: {
+                                    Label("Add Song to My Playlists", systemImage: "text.badge.plus")
+                                }
+                                Button {
+                                    addToPlaylistItem = PlaylistItem(type: "music", itemId: item.album.id.rawValue)
+                                    showAddToPlaylist = true
+                                } label: {
+                                    Label("Add Album to My Playlists", systemImage: "rectangle.stack.badge.plus")
+                                }
+                            }
                         if idx < filtered.count - 1 {
                             Divider()
                                 .background(Color.white.opacity(0.08))
@@ -418,10 +576,29 @@ struct AppleMusicView: View {
         albums = []
         defer { isLoading = false }
 
+        // Use preloaded music config, fallback to fetch, then hardcoded
+        var albumIDs = CuratedMusic.albumIDs
+        if let preloaded = ContentPreloader.shared.musicConfig {
+            musicConfig = preloaded
+            if let configAlbums = preloaded.albums, !configAlbums.isEmpty {
+                albumIDs = configAlbums.map { $0.albumId }
+            }
+        } else {
+            do {
+                let config = try await ContentAPI.shared.fetchMusicConfig()
+                musicConfig = config
+                if let configAlbums = config.albums, !configAlbums.isEmpty {
+                    albumIDs = configAlbums.map { $0.albumId }
+                }
+            } catch {
+                // Fallback to hardcoded IDs
+            }
+        }
+
         // 20-second timeout — if catalog requests hang, bail out gracefully
         let loadTask = Task {
             await withTaskGroup(of: Album?.self) { group in
-                for id in CuratedMusic.albumIDs {
+                for id in albumIDs {
                     group.addTask {
                         guard !Task.isCancelled else { return nil }
                         do {
@@ -456,6 +633,47 @@ struct AppleMusicView: View {
 
         albums = loaded.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
         music.curatedAlbums = albums
+    }
+
+    // MARK: - Load Curated Playlists
+
+    func loadCuratedPlaylists() async {
+        playlistsLoading = true
+        defer { playlistsLoading = false }
+
+        // Get playlist IDs from config (already fetched) or Firestore
+        var playlistIDs = CuratedMusic.playlistIDs
+        if let config = musicConfig, let configPlaylists = config.playlists, !configPlaylists.isEmpty {
+            playlistIDs = configPlaylists.map { $0.playlistId }
+        } else {
+            // Try fetching if not loaded yet
+            do {
+                let config = try await ContentAPI.shared.fetchMusicConfig()
+                musicConfig = config
+                if let configPlaylists = config.playlists, !configPlaylists.isEmpty {
+                    playlistIDs = configPlaylists.map { $0.playlistId }
+                }
+            } catch { /* use hardcoded */ }
+        }
+
+        var loaded: [MusicKit.Playlist] = []
+        await withTaskGroup(of: MusicKit.Playlist?.self) { group in
+            for id in playlistIDs {
+                group.addTask {
+                    do {
+                        let request = MusicCatalogResourceRequest<MusicKit.Playlist>(matching: \.id, equalTo: MusicItemID(id))
+                        let response = try await request.response()
+                        return response.items.first
+                    } catch {
+                        return nil
+                    }
+                }
+            }
+            for await playlist in group {
+                if let playlist { loaded.append(playlist) }
+            }
+        }
+        curatedPlaylists = loaded.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 }
 
@@ -670,4 +888,312 @@ struct NowPlayingBar: View {
     }
 }
 
+// MARK: - Playlist Row View (for curated playlists list)
+
+struct MusicPlaylistRowView: View {
+    let playlist: MusicKit.Playlist
+
+    var body: some View {
+        HStack(spacing: 14) {
+            if let artwork = playlist.artwork {
+                ArtworkImage(artwork, width: 60)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else {
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 60, height: 60)
+                    .overlay(
+                        Image(systemName: "music.note.list")
+                            .foregroundColor(.white.opacity(0.4))
+                            .font(.title3)
+                    )
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(playlist.name)
+                    .font(.body.bold())
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                if let curator = playlist.curatorName, !curator.isEmpty {
+                    Text(curator)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+                if let desc = playlist.standardDescription, !desc.isEmpty {
+                    Text(desc)
+                        .font(.caption2)
+                        .foregroundColor(.secondary.opacity(0.7))
+                        .lineLimit(2)
+                }
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .foregroundColor(.white.opacity(0.3))
+                .font(.caption)
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.06))
+        )
+    }
+}
+
+// MARK: - Playlist Detail View (shows tracks in a curated Apple Music playlist)
+
+struct PlaylistMusicDetailView: View {
+    let playlist: MusicKit.Playlist
+    @StateObject private var music = AppleMusicService.shared
+    @State private var tracks: [MusicKit.Track] = []
+    @State private var isLoading = true
+    @State private var addToPlaylistItem: PlaylistItem? = nil
+    @State private var showAddToPlaylist = false
+
+    var body: some View {
+        ZStack {
+            Color.clear.appBackground()
+
+            if isLoading {
+                ProgressView("Loading tracks...")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else if tracks.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "music.note")
+                        .font(.system(size: 40))
+                        .foregroundColor(.secondary)
+                    Text("No tracks found")
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    VStack(spacing: 0) {
+                        // Playlist header
+                        VStack(spacing: 12) {
+                            if let artwork = playlist.artwork {
+                                ArtworkImage(artwork, width: 180)
+                                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                            }
+                            Text(playlist.name)
+                                .font(.title2.bold())
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                            if let curator = playlist.curatorName, !curator.isEmpty {
+                                Text("by \(curator)")
+                                    .font(.subheadline)
+                                    .foregroundColor(.secondary)
+                            }
+
+                            // Play All button
+                            Button {
+                                Task {
+                                    do {
+                                        try await music.playPlaylist(playlist)
+                                    } catch {
+                                        print("Failed to play playlist: \(error)")
+                                    }
+                                }
+                            } label: {
+                                HStack {
+                                    Image(systemName: "play.fill")
+                                    Text("Play All")
+                                }
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 32)
+                                .padding(.vertical, 10)
+                                .background(
+                                    LinearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing)
+                                )
+                                .clipShape(Capsule())
+                            }
+                        }
+                        .padding(.vertical, 20)
+
+                        // Tracks
+                        LazyVStack(spacing: 0) {
+                            ForEach(Array(tracks.enumerated()), id: \.offset) { idx, track in
+                                SongRow(track: track, albumTitle: playlist.name)
+                                    .contextMenu {
+                                        Button {
+                                            addToPlaylistItem = PlaylistItem(type: "music-track", itemId: track.id.rawValue)
+                                            showAddToPlaylist = true
+                                        } label: {
+                                            Label("Add to My Playlists", systemImage: "text.badge.plus")
+                                        }
+                                    }
+                                if idx < tracks.count - 1 {
+                                    Divider()
+                                        .background(Color.white.opacity(0.08))
+                                        .padding(.leading, 72)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 16)
+                    }
+                }
+            }
+        }
+        .navigationTitle(playlist.name)
+        #if !os(tvOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .task { await loadTracks() }
+        .sheet(isPresented: $showAddToPlaylist) {
+            if let item = addToPlaylistItem {
+                AddToPlaylistView(mediaType: item.type, mediaId: item.itemId)
+            }
+        }
+    }
+
+    private func loadTracks() async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let detailed = try await playlist.with([.tracks])
+            if let playlistTracks = detailed.tracks {
+                tracks = Array(playlistTracks)
+            }
+        } catch {
+            print("Failed to load playlist tracks: \(error)")
+        }
+    }
+}
+
+// MARK: - Artist Group Model
+
+struct ArtistGroup: Identifiable {
+    var id: String { name }
+    let name: String
+    let albums: [Album]
+
+    var albumCount: Int { albums.count }
+    var firstArtwork: Artwork? { albums.first?.artwork }
+}
+
+// MARK: - Artist Row View
+
+struct ArtistRowView: View {
+    let artist: ArtistGroup
+
+    var body: some View {
+        HStack(spacing: 14) {
+            if let artwork = artist.firstArtwork {
+                ArtworkImage(artwork, width: 56)
+                    .clipShape(Circle())
+            } else {
+                Circle()
+                    .fill(Color.gray.opacity(0.3))
+                    .frame(width: 56, height: 56)
+                    .overlay(
+                        Image(systemName: "person.fill")
+                            .foregroundColor(.white.opacity(0.4))
+                    )
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(artist.name)
+                    .font(.body.bold())
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                Text("\(artist.albumCount) album\(artist.albumCount == 1 ? "" : "s")")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+
+            Spacer()
+
+            Image(systemName: "chevron.right")
+                .foregroundColor(.white.opacity(0.3))
+                .font(.caption)
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white.opacity(0.06))
+        )
+    }
+}
+
+// MARK: - Artist Albums View (drill-in from artists list)
+
+struct ArtistAlbumsView: View {
+    let artist: ArtistGroup
+    @Binding var addToPlaylistItem: PlaylistItem?
+    @Binding var showAddToPlaylist: Bool
+
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 20) {
+                // Artist header
+                VStack(spacing: 12) {
+                    if let artwork = artist.firstArtwork {
+                        ArtworkImage(artwork, width: 120)
+                            .clipShape(Circle())
+                    } else {
+                        Circle()
+                            .fill(Color.gray.opacity(0.3))
+                            .frame(width: 120, height: 120)
+                            .overlay(
+                                Image(systemName: "person.fill")
+                                    .font(.largeTitle)
+                                    .foregroundColor(.white.opacity(0.4))
+                            )
+                    }
+                    Text(artist.name)
+                        .font(.title2.bold())
+                        .foregroundColor(.white)
+                    Text("\(artist.albumCount) album\(artist.albumCount == 1 ? "" : "s")")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                }
+                .padding(.top, 16)
+
+                // Albums grid
+                #if os(tvOS)
+                let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: 5)
+                #else
+                let columns = UIDevice.current.userInterfaceIdiom == .pad
+                    ? Array(repeating: GridItem(.flexible(), spacing: 16), count: 4)
+                    : Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+                #endif
+
+                LazyVGrid(columns: columns, spacing: 16) {
+                    ForEach(artist.albums) { album in
+                        NavigationLink(destination: AlbumDetailView(album: album)) {
+                            AlbumCardView(album: album)
+                        }
+                        .contextMenu {
+                            Button {
+                                addToPlaylistItem = PlaylistItem(type: "music", itemId: album.id.rawValue)
+                                showAddToPlaylist = true
+                            } label: {
+                                Label("Add to My Playlists", systemImage: "text.badge.plus")
+                            }
+                        }
+                        #if os(tvOS)
+                        .buttonStyle(TVPlainAlbumButtonStyle())
+                        #endif
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+        .background(Color.clear.appBackground())
+        .navigationTitle(artist.name)
+        #if !os(tvOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
+        .sheet(isPresented: $showAddToPlaylist) {
+            if let item = addToPlaylistItem {
+                AddToPlaylistView(mediaType: item.type, mediaId: item.itemId)
+            }
+        }
+    }
+}
 

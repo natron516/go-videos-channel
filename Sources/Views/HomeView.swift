@@ -221,7 +221,10 @@ struct HomeView: View {
         if recentAssets.isEmpty { isLoading = true }
         async let assets = api.fetchAssets()
         async let live = api.activeLiveStream()
-        async let _ = FeaturedManager.shared.fetch()
+        // Only fetch featured if not already loaded by preloader
+        if !FeaturedManager.shared.isLoaded {
+            async let _ = FeaturedManager.shared.fetch()
+        }
         let fetched = (try? await assets) ?? []
         allAssets = fetched
         recentAssets = fetched.filter { $0.category != "sermon" && $0.category != "hidden" }

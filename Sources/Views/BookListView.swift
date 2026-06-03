@@ -134,6 +134,12 @@ struct BookListView: View {
     }
 
     private func load() async {
+        // Use preloaded cache if available
+        if let cached = ContentPreloader.shared.books {
+            allBooks = cached
+            isLoading = false
+            return
+        }
         isLoading = true
         error = nil
         do {

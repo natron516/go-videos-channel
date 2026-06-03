@@ -1,7 +1,5 @@
 import SwiftUI
 
-#if !os(tvOS)
-
 struct PodcastListView: View {
     @ObservedObject private var contentAPI = ContentAPI.shared
     @State private var podcasts: [GOPodcast] = []
@@ -97,6 +95,14 @@ struct PodcastListView: View {
     }
 
     private func load() async {
+        let pre = ContentPreloader.shared
+        if let p = pre.podcasts, let s = pre.series, let a = pre.audioAssets {
+            podcasts = p
+            seriesList = s
+            allAudioAssets = a
+            isLoading = false
+            return
+        }
         isLoading = true
         error = nil
         do {
@@ -250,4 +256,3 @@ struct PodcastRowCard: View {
     }
 }
 
-#endif

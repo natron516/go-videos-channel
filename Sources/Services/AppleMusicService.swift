@@ -173,4 +173,10 @@ class AppleMusicService: ObservableObject {
         player.queue = [track]
         try await player.play()
     }
+
+    func playPlaylist(_ playlist: MusicKit.Playlist) async throws {
+        let player = ApplicationMusicPlayer.shared
+        player.queue = [playlist]
+        try await player.play()
+    }
 }
