@@ -180,57 +180,102 @@ struct AudioAssetCard: View {
 // MARK: - Mini Player
 struct AudioMiniPlayer: View {
     @ObservedObject private var audioPlayer = AudioPlayerManager.shared
+    @State private var isScrubbing = false
+    @State private var scrubValue: Double = 0
 
     var body: some View {
         VStack(spacing: 0) {
             Divider().background(Color.white.opacity(0.15))
 
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(audioPlayer.currentTitle)
-                        .font(.subheadline.bold())
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                    if !audioPlayer.currentArtist.isEmpty {
-                        Text(audioPlayer.currentArtist)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
+            VStack(spacing: 6) {
+                // Title + close
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(audioPlayer.currentTitle)
+                            .font(.subheadline.bold())
+                            .foregroundColor(.white)
                             .lineLimit(1)
+                        if !audioPlayer.currentArtist.isEmpty {
+                            Text(audioPlayer.currentArtist)
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+                    Spacer()
+                    Button { audioPlayer.stop() } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title3)
+                            .foregroundColor(.secondary)
                     }
                 }
-                Spacer()
 
-                // Progress text
-                Text("\(audioPlayer.currentTimeFormatted) / \(audioPlayer.durationFormatted)")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .monospacedDigit()
+                // Scrubbable progress bar
+                Slider(
+                    value: Binding(
+                        get: { isScrubbing ? scrubValue : audioPlayer.progress },
+                        set: { newVal in
+                            scrubValue = newVal
+                            isScrubbing = true
+                        }
+                    ),
+                    in: 0...1,
+                    onEditingChanged: { editing in
+                        if !editing {
+                            audioPlayer.seek(to: scrubValue)
+                            isScrubbing = false
+                        }
+                    }
+                )
+                .tint(.blue)
+                .frame(height: 20)
 
-                Button {
-                    audioPlayer.togglePlayPause()
-                } label: {
-                    Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
-                        .font(.title2)
-                        .foregroundColor(.white)
-                        .frame(width: 44, height: 44)
-                }
-
-                Button {
-                    audioPlayer.stop()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
+                // Time + controls
+                HStack(spacing: 0) {
+                    Text(audioPlayer.currentTimeFormatted)
+                        .font(.caption2)
                         .foregroundColor(.secondary)
+                        .monospacedDigit()
+                        .frame(width: 44, alignment: .leading)
+
+                    Spacer()
+
+                    // Skip back 15s
+                    Button { audioPlayer.skip(seconds: -15) } label: {
+                        Image(systemName: "gobackward.15")
+                            .font(.title3)
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 36)
+                    }
+
+                    // Play/Pause
+                    Button { audioPlayer.togglePlayPause() } label: {
+                        Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
+                            .font(.title2)
+                            .foregroundColor(.white)
+                            .frame(width: 50, height: 36)
+                    }
+
+                    // Skip forward 15s
+                    Button { audioPlayer.skip(seconds: 15) } label: {
+                        Image(systemName: "goforward.15")
+                            .font(.title3)
+                            .foregroundColor(.white)
+                            .frame(width: 44, height: 36)
+                    }
+
+                    Spacer()
+
+                    Text(audioPlayer.durationFormatted)
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+                        .monospacedDigit()
+                        .frame(width: 44, alignment: .trailing)
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.vertical, 10)
             .background(Color.black.opacity(0.85))
-
-            // Progress bar
-            ProgressView(value: audioPlayer.progress)
-                .tint(.blue)
-                .frame(height: 2)
         }
         .background(Color.black.opacity(0.9))
     }

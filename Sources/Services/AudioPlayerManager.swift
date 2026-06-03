@@ -137,6 +137,20 @@ class AudioPlayerManager: ObservableObject {
         player.seek(to: targetTime)
     }
 
+    func skip(seconds: Double) {
+        guard let player else { return }
+        let current = player.currentTime().seconds
+        let dur = player.currentItem?.duration.seconds ?? 0
+        guard dur > 0 else { return }
+        let target = min(max(current + seconds, 0), dur)
+        let time = CMTime(seconds: target, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        player.seek(to: time)
+    }
+
+    var currentSeconds: Double {
+        player?.currentTime().seconds ?? 0
+    }
+
     func togglePlayPause() {
         if isPlaying { pause() } else { resume() }
     }
