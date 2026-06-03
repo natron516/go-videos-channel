@@ -12,6 +12,124 @@ struct TabBarOnlyModifier: ViewModifier {
     }
 }
 
+// ─────────────────────────────────────────────────────────
+// MARK: - iOS section enum (shared by iPad sidebar + Browse)
+// ─────────────────────────────────────────────────────────
+enum iOSSection: Int, CaseIterable, Identifiable {
+    case discover, watch, listen, read, library
+    var id: Int { rawValue }
+
+    var title: String {
+        switch self {
+        case .discover: return "Discover"
+        case .watch:    return "Watch"
+        case .listen:   return "Listen"
+        case .read:     return "Read"
+        case .library:  return "My Playlists"
+        }
+    }
+
+    var icon: String {
+        switch self {
+        case .discover: return "sparkle"
+        case .watch:    return "play.rectangle.fill"
+        case .listen:   return "headphones"
+        case .read:     return "book.fill"
+        case .library:  return "bookmark.fill"
+        }
+    }
+
+    /// For live/new-content badge tracking — watch tab covers all video categories
+    var assetCategory: String? { nil }
+
+    static var browseItems: [iOSSection] { [] }
+}
+
+// iPad uses a custom bottom tab bar to match iPhone — iPadOS 18+ forces top placement with
+// default TabView, so we build our own.
+struct iPadContentView: View {
+    @EnvironmentObject var api: MuxAPI
+    @State private var selectedTab: Int = 0
+    @ObservedObject private var liveManager = LiveStreamManager.shared
+
+    private var watchTabTitle: String {
+        liveManager.isLive ? "🔴 Watch" : "Watch"
+    }
+
+    private struct TabItem: Identifiable {
+        let id: Int
+        let title: String
+        let icon: String
+    }
+
+    private var tabs: [TabItem] {
+        [
+            TabItem(id: 0, title: "Discover", icon: "sparkles"),
+            TabItem(id: 1, title: watchTabTitle, icon: "play.rectangle.fill"),
+            TabItem(id: 2, title: "Listen", icon: "headphones"),
+            TabItem(id: 3, title: "Read", icon: "book.fill"),
+            TabItem(id: 4, title: "My Playlists", icon: "bookmark.fill"),
+        ]
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Content area
+            Group {
+                switch selectedTab {
+                case 0: NavigationStack { HomeView() }
+                case 1: NavigationStack { WatchView() }
+                case 2: NavigationStack { ListenView() }
+                case 3: NavigationStack { ReadView() }
+                case 4: NavigationStack { PlaylistsView() }
+                default: NavigationStack { HomeView() }
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            // Custom bottom tab bar
+            HStack {
+                ForEach(tabs) { tab in
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            selectedTab = tab.id
+                        }
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(systemName: tab.icon)
+                                .font(.system(size: 22))
+                            Text(tab.title)
+                                .font(.caption2)
+                        }
+                        .foregroundColor(selectedTab == tab.id ? .blue : .secondary)
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+            }
+            .padding(.top, 10)
+            .padding(.bottom, 16)
+            .background(
+                Rectangle()
+                    .fill(.ultraThinMaterial)
+                    .overlay(alignment: .top) {
+                        Divider()
+                    }
+            )
+        }
+        .ignoresSafeArea(.container, edges: .bottom)
+        .task {
+            while !Task.isCancelled {
+                let stream = try? await api.activeLiveStream()
+                let assets = (try? await api.fetchAllAssets()) ?? []
+                await MainActor.run {
+                    LiveStreamManager.shared.update(stream: stream, allAssets: assets, authoritative: true)
+                    NewContentTracker.shared.update(assets: assets)
+                }
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+            }
+        }
+    }
+}
 
 #endif
 
@@ -33,7 +151,7 @@ enum TVSection: Int, CaseIterable, Identifiable {
         case .performance:     return "Shows"
         case .funzone:         return "FunZone"
         case .listen:          return "Listen"
-        case .playlists:       return "Playlists"
+        case .playlists:       return "My Playlists"
         case .search:          return "Search"
         case .privateContent:  return "Private"
         }
@@ -48,13 +166,12 @@ enum TVSection: Int, CaseIterable, Identifiable {
         case .performance:     return "theatermasks.fill"
         case .funzone:         return "party.popper.fill"
         case .listen:          return "headphones"
-        case .playlists:       return "music.note.list"
+        case .playlists:       return "bookmark.fill"
         case .search:          return "magnifyingglass"
         case .privateContent:  return "lock.fill"
         }
     }
 
-    /// The Mux asset category this section displays, or nil if not category-based.
     var assetCategory: String? {
         switch self {
         case .sermons:         return "sermon"
@@ -69,7 +186,6 @@ enum TVSection: Int, CaseIterable, Identifiable {
 }
 
 // ── Sidebar ───────────────────────────────────────────────
-// Suppresses ALL default tvOS button scaling/focus effects
 private struct TVPlainButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
@@ -97,7 +213,6 @@ struct TVSidebar: View {
     @State private var showWatchTimer = false
 
     var body: some View {
-        // No ScrollView — everything sized to fit the screen so all items are always focusable
         VStack(alignment: .leading, spacing: 0) {
             // Logo
             if let uiImage = UIImage(named: "NavLogo") {
@@ -111,7 +226,7 @@ struct TVSidebar: View {
                     .padding(.bottom, 16)
             }
 
-            // Categories — no extra spacing, tightly packed
+            // Categories
             ForEach(TVSection.allCases.filter {
                 $0 != .listen && ($0 != .privateContent || auth.hasPrivateAccess)
             }) { section in
@@ -125,7 +240,6 @@ struct TVSidebar: View {
                 .prefersDefaultFocus(section == selection, in: sidebarNS)
             }
 
-            // Controls — below categories
             Spacer().frame(height: 20)
             Divider()
                 .background(Color.white.opacity(0.15))
@@ -270,15 +384,19 @@ struct TVSidebarItem: View {
                 .font(.system(size: 28, weight: isSelected ? .semibold : .regular))
                 .lineLimit(1)
                 .foregroundColor(.white)
-            if hasLive {
-                Circle()
-                    .fill(Color.red)
-                    .frame(width: 10, height: 10)
-            } else if hasNew {
-                Circle()
-                    .fill(Color.blue)
-                    .frame(width: 10, height: 10)
-            }
+                .overlay(alignment: .topTrailing) {
+                    if hasLive {
+                        Circle()
+                            .fill(Color.red)
+                            .frame(width: 10, height: 10)
+                            .offset(x: 14, y: -2)
+                    } else if hasNew {
+                        Circle()
+                            .fill(Color.blue)
+                            .frame(width: 10, height: 10)
+                            .offset(x: 14, y: -2)
+                    }
+                }
             Spacer()
         }
         .padding(.horizontal, 16)
@@ -304,7 +422,6 @@ struct TVContentView: View {
 
     var body: some View {
         ZStack {
-
             Color.black.ignoresSafeArea()
             Image("AppBackground")
                 .resizable()
@@ -328,9 +445,7 @@ struct TVContentView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
-
         .task {
-            // Authoritative live stream poller — only this source clears the live state
             while !Task.isCancelled {
                 let stream = try? await api.activeLiveStream()
                 let assets = (try? await api.fetchAssets()) ?? []
@@ -348,7 +463,6 @@ struct TVContentView: View {
         }
         .onChange(of: selection) { _ in
             navPath = NavigationPath()
-            // Re-validate PIN when switching to sermons (catches admin PIN changes)
             if selection == .sermons {
                 PinUnlockManager.shared.validateUnlock { valid in
                     DispatchQueue.main.async { sermonUnlocked = valid }
@@ -366,8 +480,6 @@ struct TVContentView: View {
         case .home:        HomeView()
         case .sermons:
             ZStack {
-                // Always present so it pre-loads while PIN is showing.
-                // Disabled keeps focus out of the grid until unlocked.
                 SermonLibraryView()
                     .disabled(!sermonUnlocked)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -376,9 +488,9 @@ struct TVContentView: View {
                         PinUnlockManager.shared.unlock()
                         sermonUnlocked = true
                     }
-                        .background(Color.black)
-                        .ignoresSafeArea()
-                        .focusSection()
+                    .background(Color.black)
+                    .ignoresSafeArea()
+                    .focusSection()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -386,10 +498,10 @@ struct TVContentView: View {
         case .music:       CategoryLibraryView(title: "Music",        category: "music",       icon: "music.note.tv.fill")
         case .performance: CategoryLibraryView(title: "Shows",        category: "performance", icon: "theatermasks.fill")
         case .funzone:     CategoryLibraryView(title: "FunZone",      category: "funzone",     icon: "party.popper.fill")
-        case .listen:          AppleMusicView()
-        case .playlists:       PlaylistsView()
-        case .search:          SearchView()
-        case .privateContent:  CategoryLibraryView(title: "Private", category: "hidden", icon: "lock.fill", includePrivate: true)
+        case .listen:      AppleMusicView()
+        case .playlists:   PlaylistsView()
+        case .search:      SearchView()
+        case .privateContent: CategoryLibraryView(title: "Private", category: "hidden", icon: "lock.fill", includePrivate: true)
         }
     }
 }
@@ -401,94 +513,67 @@ struct TVContentView: View {
 struct ContentView: View {
     @EnvironmentObject var api: MuxAPI
 
-
     var body: some View {
         #if os(tvOS)
         TVContentView()
         #else
-        ZStack(alignment: .top) {
-            mainTabs.modifier(TabBarOnlyModifier())
-        }
-        .onReceive(NotificationCenter.default.publisher(for: AppNavigator.navigateToSermonsNotification)) { _ in
-            selectedTab = 1
+        Group {
+            if UIDevice.current.userInterfaceIdiom == .pad {
+                iPadContentView()
+            } else {
+                ZStack(alignment: .top) {
+                    mainTabs.modifier(TabBarOnlyModifier())
+                }
+                .onReceive(NotificationCenter.default.publisher(for: AppNavigator.navigateToSermonsNotification)) { _ in
+                    selectedTab = 1 // Watch tab
+                }
+            }
         }
         #endif
     }
 
     #if !os(tvOS)
-    @State private var selectedTab: Int = 0
-    @ObservedObject private var auth = AuthService.shared
+    @State private var selectedTab: Int = {
+        if let arg = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--tab=") }) {
+            return Int(arg.replacingOccurrences(of: "--tab=", with: "")) ?? 0
+        }
+        return 0
+    }()
     @ObservedObject private var liveManager = LiveStreamManager.shared
-    @ObservedObject private var newContent = NewContentTracker.shared
 
-    /// Returns true when a live stream is active in the given Mux category.
-    private func isLive(_ category: String) -> Bool {
-        guard liveManager.isLive, let liveCat = liveManager.liveCategory else { return false }
-        return liveCat == category
+    private var watchTabTitle: String {
+        liveManager.isLive ? "🔴 Watch" : "Watch"
     }
-
-    /// Tab title with live or new-content indicator.
-    private func tabTitle(_ title: String, category: String) -> String {
-        if isLive(category) { return "🔴 \(title)" }
-        if newContent.hasNew(category) { return "\u{1F535} \(title)" }  // blue circle
-        return title
-    }
-
-
 
     @ViewBuilder
     var mainTabs: some View {
         TabView(selection: $selectedTab) {
+            // 0 — Discover
             NavigationStack { HomeView() }
-                .tabItem { Label("Home", systemImage: "house.fill") }
+                .tabItem { Label("Discover", systemImage: "sparkle") }
                 .tag(0)
 
-            NavigationStack { SermonLibraryView() }
-                .tabItem { Label(tabTitle("Sermons", category: "sermon"), systemImage: "film.stack") }
+            // 1 — Watch
+            NavigationStack { WatchView() }
+                .tabItem { Label(watchTabTitle, systemImage: "play.rectangle.fill") }
                 .tag(1)
 
-            NavigationStack {
-                CategoryLibraryView(title: "Children's", category: "children", icon: "star.circle.fill")
-            }
-            .tabItem { Label(tabTitle("Children's", category: "children"), systemImage: "star.circle.fill") }
-            .tag(2)
+            // 2 — Listen
+            NavigationStack { ListenView() }
+                .tabItem { Label("Listen", systemImage: "headphones") }
+                .tag(2)
 
-            NavigationStack {
-                CategoryLibraryView(title: "Music", category: "music", icon: "music.note.tv.fill")
-            }
-            .tabItem { Label(tabTitle("Music", category: "music"), systemImage: "music.note.tv.fill") }
-            .tag(3)
+            // 3 — Read
+            NavigationStack { ReadView() }
+                .tabItem { Label("Read", systemImage: "book.fill") }
+                .tag(3)
 
-            NavigationStack {
-                CategoryLibraryView(title: "Performances", category: "performance", icon: "theatermasks.fill")
-            }
-            .tabItem { Label(tabTitle("Shows", category: "performance"), systemImage: "theatermasks.fill") }
-            .tag(4)
-
-            NavigationStack {
-                CategoryLibraryView(title: "FunZone", category: "funzone", icon: "party.popper.fill")
-            }
-            .tabItem { Label(tabTitle("FunZone", category: "funzone"), systemImage: "party.popper.fill") }
-            .tag(5)
-
+            // 4 — Library (playlists)
             NavigationStack { PlaylistsView() }
-                .tabItem { Label("Lists", systemImage: "music.note.list") }
-                .tag(6)
-
-            NavigationStack { DownloadsView() }
-                .tabItem { Label("Downloaded", systemImage: "arrow.down.circle.fill") }
-                .tag(7)
-
-            if auth.hasPrivateAccess {
-                NavigationStack {
-                    CategoryLibraryView(title: "Private", category: "hidden", icon: "lock.fill", includePrivate: true)
-                }
-                .tabItem { Label(tabTitle("Private", category: "hidden"), systemImage: "lock.fill") }
-                .tag(8)
-            }
+                .tabItem { Label("My Playlists", systemImage: "bookmark.fill") }
+                .tag(4)
         }
         .task {
-            // Authoritative live stream poller for iOS (mirrors tvOS poller)
             while !Task.isCancelled {
                 let stream = try? await api.activeLiveStream()
                 let assets = (try? await api.fetchAllAssets()) ?? []

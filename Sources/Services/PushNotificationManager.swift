@@ -128,7 +128,7 @@ class PushNotificationManager: NSObject, ObservableObject, UNUserNotificationCen
                                 willPresent notification: UNNotification,
                                 withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         print("[Push] Received notification in foreground: \(notification.request.content.title)")
-        completionHandler([.banner, .badge, .sound])
+        completionHandler([.banner, .sound])  // no .badge — prevents UIKit tab bar badge dots
     }
 
     /// Handle notification tap — deep link to the notified video

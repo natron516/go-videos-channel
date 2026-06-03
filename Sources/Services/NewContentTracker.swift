@@ -37,7 +37,7 @@ class NewContentTracker: ObservableObject {
                 self.newCategories = categories
             }
             #if os(iOS)
-            self.applyTabBarBadges()
+            self.clearAllBadges()
             #endif
         }
     }
@@ -48,9 +48,13 @@ class NewContentTracker: ObservableObject {
     }
 
     #if os(iOS)
-    /// Clear any stale UIKit badge dots — indicators are now emoji-only in tab titles.
-    func applyTabBarBadges() {
-        func apply() -> Bool {
+    /// Aggressively clear ALL UIKit tab bar badges and app icon badge.
+    /// Indicators are emoji-only in tab titles — nothing should set UIKit badges.
+    func clearAllBadges() {
+        // Clear app icon badge
+        UIApplication.shared.applicationIconBadgeNumber = 0
+
+        func clearTabBadges() -> Bool {
             guard let scene = UIApplication.shared.connectedScenes
                 .compactMap({ $0 as? UIWindowScene }).first,
                   let window = scene.windows.first
@@ -66,16 +70,15 @@ class NewContentTracker: ObservableObject {
             }
 
             guard let items = items, !items.isEmpty else { return false }
-
-            // Clear ALL badges — tab title emoji handles indicators now
             for item in items {
                 item.badgeValue = nil
             }
             return true
         }
 
-        if !apply() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { _ = apply() }
+        if !clearTabBadges() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { _ = clearTabBadges() }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { _ = clearTabBadges() }
         }
     }
     #endif

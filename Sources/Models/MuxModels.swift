@@ -49,21 +49,26 @@ struct MuxAsset: Identifiable, Decodable {
         #else
         let w = UIDevice.current.userInterfaceIdiom == .pad ? 400 : 320
         #endif
-        let stableHash = id.unicodeScalars.reduce(0) { ($0 &* 31) &+ Int($1.value) }
-        let isSermon = category == "sermon"
         let t: Int
-        if isSermon, let duration = duration, duration > 30 * 60 {
-            let startSec = 17 * 60
-            let endSec   = 27 * 60
-            let range = endSec - startSec
-            t = startSec + (abs(stableHash) % range)
-        } else if let duration = duration, duration > 0 {
-            let start = duration * 0.10
-            let end   = duration * 0.80
-            let range = max(Int(end - start), 1)
-            t = Int(start) + (abs(stableHash) % range)
+        // Use server-computed thumbnail_time (wall-clock based, e.g. 10:05 AM offset) if available
+        if let ttStr = passthroughJSON?["thumbnail_time"], let tt = Int(ttStr), tt > 0 {
+            t = tt
         } else {
-            t = 10
+            let stableHash = id.unicodeScalars.reduce(0) { ($0 &* 31) &+ Int($1.value) }
+            let isSermon = category == "sermon"
+            if isSermon, let duration = duration, duration > 30 * 60 {
+                let startSec = 17 * 60
+                let endSec   = 27 * 60
+                let range = endSec - startSec
+                t = startSec + (abs(stableHash) % range)
+            } else if let duration = duration, duration > 0 {
+                let start = duration * 0.10
+                let end   = duration * 0.80
+                let range = max(Int(end - start), 1)
+                t = Int(start) + (abs(stableHash) % range)
+            } else {
+                t = 10
+            }
         }
         return URL(string: "https://image.mux.com/\(pid)/thumbnail.webp?width=\(w)&time=\(t)")
     }

@@ -49,9 +49,11 @@ struct HomeView: View {
         #if os(tvOS)
         return Array(repeating: GridItem(.flexible(), spacing: 48), count: 3)
         #else
-        return UIDevice.current.userInterfaceIdiom == .pad
-            ? Array(repeating: GridItem(.flexible(), spacing: 16), count: 3)
-            : [GridItem(.flexible(), spacing: 0)]
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            return Array(repeating: GridItem(.flexible(), spacing: 24), count: 3)
+        } else {
+            return [GridItem(.flexible(), spacing: 0)]
+        }
         #endif
     }
 
@@ -134,10 +136,9 @@ struct HomeView: View {
                             }
                         }
                     }
-                    .padding(tvOSSpacing ? 20 : 8)
+                    .padding(tvOSSpacing ? 20 : 16)
                     #if !os(tvOS)
-                    // Slightly inset on iPhone
-                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .phone ? 16 : 0)
+                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16)
                     #endif
                 }
             }
@@ -223,7 +224,7 @@ struct HomeView: View {
         async let _ = FeaturedManager.shared.fetch()
         let fetched = (try? await assets) ?? []
         allAssets = fetched
-        recentAssets = fetched.filter { $0.category != "sermon" }
+        recentAssets = fetched.filter { $0.category != "sermon" && $0.category != "hidden" }
         liveStream = try? await live
         LiveStreamManager.shared.update(stream: liveStream, allAssets: fetched)
         NewContentTracker.shared.update(assets: fetched)

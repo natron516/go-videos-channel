@@ -1,11 +1,25 @@
 import SwiftUI
 
 struct AddToPlaylistView: View {
-    let assetId: String
+    /// For video assets (existing callers)
+    var assetId: String?
+    /// For audio assets (new callers)
+    var audioId: String?
+    /// Generic: any media type + id
+    var mediaType: String?
+    var mediaId: String?
+
     @Environment(\.dismiss) var dismiss
     @ObservedObject private var manager = PlaylistManager.shared
     @State private var showNewPlaylist = false
     @State private var newName = ""
+
+    private var playlistItem: PlaylistItem? {
+        if let type = mediaType, let id = mediaId { return PlaylistItem(type: type, itemId: id) }
+        if let id = assetId { return PlaylistItem(type: "video", itemId: id) }
+        if let id = audioId { return PlaylistItem(type: "audio", itemId: id) }
+        return nil
+    }
 
     var body: some View {
         NavigationStack {
@@ -14,9 +28,9 @@ struct AddToPlaylistView: View {
                     HStack {
                         TextField("New playlist name", text: $newName)
                         Button("Create") {
-                            if !newName.isEmpty {
+                            if !newName.isEmpty, let item = playlistItem {
                                 let p = manager.create(name: newName)
-                                manager.addAsset(assetId, to: p.id)
+                                manager.addItem(item, to: p.id)
                                 newName = ""
                                 showNewPlaylist = false
                                 dismiss()
@@ -39,12 +53,17 @@ struct AddToPlaylistView: View {
                             .foregroundColor(.secondary)
                     } else {
                         ForEach(manager.playlists) { playlist in
-                            let added = playlist.assetIds.contains(assetId)
+                            let added: Bool = {
+                                guard let item = playlistItem else { return false }
+                                return playlist.items.contains { $0.type == item.type && $0.itemId == item.itemId }
+                            }()
+
                             Button {
+                                guard let item = playlistItem else { return }
                                 if added {
-                                    manager.removeAsset(assetId, from: playlist.id)
+                                    manager.removeItem(item, from: playlist.id)
                                 } else {
-                                    manager.addAsset(assetId, to: playlist.id)
+                                    manager.addItem(item, to: playlist.id)
                                 }
                             } label: {
                                 HStack {
@@ -55,7 +74,7 @@ struct AddToPlaylistView: View {
                                         .foregroundColor(.primary)
                                         .font(.body)
                                     Spacer()
-                                    Text("\(playlist.assetIds.count)")
+                                    Text("\(playlist.totalCount)")
                                         .foregroundColor(.secondary)
                                         .font(.callout)
                                 }

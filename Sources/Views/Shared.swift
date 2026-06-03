@@ -128,6 +128,23 @@ extension View {
         }
         #endif
     }
+
+    /// Generic playlist presentation for any media type (book, article, audio, video)
+    func addToPlaylistPresentation(isPresented: Binding<Bool>, mediaType: String, mediaId: String?) -> some View {
+        #if os(tvOS)
+        return self.fullScreenCover(isPresented: isPresented) {
+            if let id = mediaId {
+                AddToPlaylistView(mediaType: mediaType, mediaId: id)
+            }
+        }
+        #else
+        return self.sheet(isPresented: isPresented) {
+            if let id = mediaId {
+                AddToPlaylistView(mediaType: mediaType, mediaId: id)
+            }
+        }
+        #endif
+    }
 }
 
 // Search toolbar modifier for iOS
@@ -172,6 +189,7 @@ struct GONavBarModifier: ViewModifier {
     @State private var showDeleteConfirm = false
     @State private var showDeleteError = false
     @State private var showFeedback = false
+    @ObservedObject private var watchTimer = WatchTimerManager.shared
     @ObservedObject private var auth = AuthService.shared
 
     func body(content: Content) -> some View {
@@ -200,11 +218,16 @@ struct GONavBarModifier: ViewModifier {
                         Image(systemName: "shuffle")
                             .foregroundColor(autoplay.shuffle ? .green : .secondary)
                     }
-                    WatchTimerToolbarButton { showWatchTimer = true }
                     Button { showSearch = true } label: {
                         Image(systemName: "magnifyingglass")
                     }
                     Menu {
+                        Button { showWatchTimer = true } label: {
+                            Label(
+                                watchTimer.isRunning ? "Watch Timer (ON)" : "Watch Timer",
+                                systemImage: "timer"
+                            )
+                        }
                         Button { showLinkTV = true } label: {
                             Label("Link Apple TV", systemImage: "appletv")
                         }

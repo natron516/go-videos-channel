@@ -135,7 +135,7 @@ struct CategoryLibraryView: View {
             async let allAssets = includePrivate ? api.fetchAllAssets() : api.fetchAssets()
             async let liveStream = api.activeLiveStream()
             let all = try await allAssets
-            assets = all.filter { $0.category == category }
+            assets = all.filter { $0.category == category || (includePrivate && $0.category == nil) }
             // Keep LiveStreamManager current so card borders reflect live state
             LiveStreamManager.shared.update(stream: try? await liveStream, allAssets: all)
             prefetchThumbnails(assets.map(\.thumbnailURL))

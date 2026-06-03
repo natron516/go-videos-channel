@@ -161,4 +161,16 @@ class AppleMusicService: ObservableObject {
             }
         }
     }
+
+    func play(song: Song) async throws {
+        let player = ApplicationMusicPlayer.shared
+        player.queue = [song]
+        try await player.play()
+    }
+
+    func play(track: MusicKit.Track) async throws {
+        let player = ApplicationMusicPlayer.shared
+        player.queue = [track]
+        try await player.play()
+    }
 }

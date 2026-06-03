@@ -190,7 +190,7 @@ struct SermonLibraryView: View {
             async let allAssets = api.fetchAssets()
             async let liveStream = api.activeLiveStream()
             let all = try await allAssets
-            assets = all.filter { $0.category == "sermon" || $0.category == nil }
+            assets = all.filter { $0.category == "sermon" }
             // Keep LiveStreamManager current so card borders reflect live state
             LiveStreamManager.shared.update(stream: try? await liveStream, allAssets: all)
             NewContentTracker.shared.update(assets: all)

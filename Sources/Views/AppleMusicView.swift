@@ -67,6 +67,14 @@ struct AppleMusicView: View {
     @State private var isLoading = true
     @State private var loadError: String? = nil
     @State private var showAsList = false
+    @State private var songs: [(album: Album, track: MusicKit.Track)] = []
+
+    enum MusicSegment: String, CaseIterable {
+        case albums = "Albums"
+        case songs = "Songs"
+    }
+    @State private var segment: MusicSegment = .albums
+    @State private var musicSearchText = ""
     @State private var activeLoadTask: Task<Void, Never>? = nil
 
     var body: some View {
@@ -216,20 +224,65 @@ struct AppleMusicView: View {
 
     // MARK: - Content
 
+    private var filteredAlbums: [Album] {
+        guard !musicSearchText.isEmpty else { return albums }
+        let q = musicSearchText.lowercased()
+        return albums.filter {
+            $0.title.lowercased().contains(q) ||
+            $0.artistName.lowercased().contains(q)
+        }
+    }
+
+    private var filteredSongs: [(album: Album, track: MusicKit.Track)] {
+        guard !musicSearchText.isEmpty else { return songs }
+        let q = musicSearchText.lowercased()
+        return songs.filter {
+            $0.track.title.lowercased().contains(q) ||
+            $0.track.artistName.lowercased().contains(q) ||
+            $0.album.title.lowercased().contains(q)
+        }
+    }
+
     var contentView: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
+            VStack(alignment: .leading, spacing: 16) {
                 // Now Playing bar
                 if music.isPlaying, let title = music.nowPlayingTitle {
                     NowPlayingBar(title: title)
                         .padding(.horizontal, 16)
                 }
 
-                // Albums section
-                if !albums.isEmpty {
-                    HStack {
-                        sectionHeader("Albums")
-                        Spacer()
+                // Search bar
+                HStack(spacing: 8) {
+                    Image(systemName: "magnifyingglass")
+                        .foregroundColor(.secondary)
+                    TextField("Search music...", text: $musicSearchText)
+                        .foregroundColor(.white)
+                    if !musicSearchText.isEmpty {
+                        Button { musicSearchText = "" } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+                .padding(10)
+                .background(Color.white.opacity(0.08))
+                .cornerRadius(10)
+                .padding(.horizontal, 16)
+
+                // Segment: Albums / Songs
+                HStack {
+                    Picker("", selection: $segment) {
+                        ForEach(MusicSegment.allCases, id: \.self) { s in
+                            Text(s.rawValue).tag(s)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .frame(width: 200)
+
+                    Spacer()
+
+                    if segment == .albums {
                         Button {
                             showAsList.toggle()
                         } label: {
@@ -237,48 +290,117 @@ struct AppleMusicView: View {
                                 .font(.title3)
                                 .foregroundColor(.secondary)
                         }
-                        .padding(.trailing, 16)
-                    }
-
-                    if showAsList {
-                        // List view
-                        VStack(spacing: 8) {
-                            ForEach(albums) { album in
-                                NavigationLink(destination: AlbumDetailView(album: album)) {
-                                    AlbumListRow(album: album)
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.horizontal, 16)
-                    } else {
-                        // Grid view
-                        #if os(tvOS)
-                        let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: 5)
-                        #else
-                        let columns = UIDevice.current.userInterfaceIdiom == .pad
-                            ? Array(repeating: GridItem(.flexible(), spacing: 16), count: 4)
-                            : Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
-                        #endif
-
-                        LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(albums) { album in
-                                NavigationLink(destination: AlbumDetailView(album: album)) {
-                                    AlbumCardView(album: album)
-                                }
-                                #if os(tvOS)
-                                .buttonStyle(TVPlainAlbumButtonStyle())
-                                #endif
-                            }
-                        }
-                        .padding(.horizontal, 16)
                     }
                 }
+                .padding(.horizontal, 16)
 
-
+                if segment == .albums {
+                    albumsSection
+                } else {
+                    songsSection
+                }
             }
             .padding(.vertical, 16)
         }
+    }
+
+    private var albumsSection: some View {
+        Group {
+            let filtered = filteredAlbums
+            if filtered.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "music.note.list")
+                        .font(.system(size: 40))
+                        .foregroundColor(.secondary)
+                    Text(musicSearchText.isEmpty ? "No albums" : "No matching albums")
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(40)
+            } else if showAsList {
+                VStack(spacing: 8) {
+                    ForEach(filtered) { album in
+                        NavigationLink(destination: AlbumDetailView(album: album)) {
+                            AlbumListRow(album: album)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal, 16)
+            } else {
+                #if os(tvOS)
+                let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: 5)
+                #else
+                let columns = UIDevice.current.userInterfaceIdiom == .pad
+                    ? Array(repeating: GridItem(.flexible(), spacing: 16), count: 4)
+                    : Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+                #endif
+
+                LazyVGrid(columns: columns, spacing: 16) {
+                    ForEach(filtered) { album in
+                        NavigationLink(destination: AlbumDetailView(album: album)) {
+                            AlbumCardView(album: album)
+                        }
+                        #if os(tvOS)
+                        .buttonStyle(TVPlainAlbumButtonStyle())
+                        #endif
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+    }
+
+    private var songsSection: some View {
+        Group {
+            let filtered = filteredSongs
+            if songs.isEmpty {
+                VStack(spacing: 12) {
+                    ProgressView("Loading songs...")
+                }
+                .frame(maxWidth: .infinity)
+                .padding(40)
+                .task { await loadSongs() }
+            } else if filtered.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "music.note")
+                        .font(.system(size: 40))
+                        .foregroundColor(.secondary)
+                    Text("No matching songs")
+                        .foregroundColor(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(40)
+            } else {
+                LazyVStack(spacing: 0) {
+                    ForEach(Array(filtered.enumerated()), id: \.offset) { idx, item in
+                        SongRow(track: item.track, albumTitle: item.album.title)
+                        if idx < filtered.count - 1 {
+                            Divider()
+                                .background(Color.white.opacity(0.08))
+                                .padding(.leading, 72)
+                        }
+                    }
+                }
+                .padding(.horizontal, 16)
+            }
+        }
+    }
+
+    private func loadSongs() async {
+        guard songs.isEmpty else { return }
+        var allSongs: [(album: Album, track: MusicKit.Track)] = []
+        for album in albums {
+            do {
+                let detail = try await album.with([.tracks])
+                if let tracks = detail.tracks {
+                    for track in tracks {
+                        allSongs.append((album: album, track: track))
+                    }
+                }
+            } catch { /* skip */ }
+        }
+        songs = allSongs.sorted { $0.track.title.localizedCaseInsensitiveCompare($1.track.title) == .orderedAscending }
     }
 
     func sectionHeader(_ title: String) -> some View {
@@ -333,6 +455,7 @@ struct AppleMusicView: View {
         }
 
         albums = loaded.sorted { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        music.curatedAlbums = albums
     }
 }
 
@@ -344,20 +467,22 @@ struct AlbumCardView: View {
 
     var body: some View {
         VStack(alignment: .center, spacing: 8) {
-            if let artwork = album.artwork {
-                ArtworkImage(artwork, width: 150)
-                    .aspectRatio(1, contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-            } else {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.gray.opacity(0.3))
-                    .aspectRatio(1, contentMode: .fit)
-                    .overlay(
-                        Image(systemName: "music.note")
-                            .font(.largeTitle)
-                            .foregroundColor(.white.opacity(0.4))
-                    )
-            }
+            GeometryReader { geo in
+                    if let artwork = album.artwork {
+                        ArtworkImage(artwork, width: geo.size.width)
+                            .aspectRatio(1, contentMode: .fit)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                    } else {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.gray.opacity(0.3))
+                            .overlay(
+                                Image(systemName: "music.note")
+                                    .font(.largeTitle)
+                                    .foregroundColor(.white.opacity(0.4))
+                            )
+                    }
+                }
+                .aspectRatio(1, contentMode: .fit)
 
             Text(album.title)
                 .font(.caption.bold())
@@ -437,6 +562,70 @@ struct AlbumListRow: View {
 }
 
 
+
+// MARK: - Song Row
+
+struct SongRow: View {
+    let track: MusicKit.Track
+    let albumTitle: String
+    @StateObject private var music = AppleMusicService.shared
+
+    var body: some View {
+        Button {
+            Task {
+                do {
+                    try await music.play(track: track)
+                } catch {
+                    print("Failed to play track: \(error)")
+                }
+            }
+        } label: {
+            HStack(spacing: 14) {
+                // Track artwork
+                if let artwork = track.artwork {
+                    ArtworkImage(artwork, width: 48)
+                        .clipShape(RoundedRectangle(cornerRadius: 6))
+                } else {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.white.opacity(0.08))
+                        .frame(width: 48, height: 48)
+                        .overlay(
+                            Image(systemName: "music.note")
+                                .foregroundColor(.secondary)
+                        )
+                }
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(track.title)
+                        .font(.subheadline.bold())
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+
+                    Text("\(track.artistName) · \(albumTitle)")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                if let dur = track.duration {
+                    let mins = Int(dur) / 60
+                    let secs = Int(dur) % 60
+                    Text(String(format: "%d:%02d", mins, secs))
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                Image(systemName: "play.fill")
+                    .foregroundColor(.secondary)
+                    .font(.caption)
+            }
+            .padding(.vertical, 10)
+        }
+        .buttonStyle(.plain)
+    }
+}
 
 // MARK: - Now Playing Bar
 
