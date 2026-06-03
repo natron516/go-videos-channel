@@ -211,6 +211,11 @@ struct AudioMiniPlayer: View {
                 }
 
                 // Scrubbable progress bar
+                #if os(tvOS)
+                ProgressView(value: audioPlayer.progress)
+                    .tint(.blue)
+                    .frame(height: 4)
+                #else
                 Slider(
                     value: Binding(
                         get: { isScrubbing ? scrubValue : audioPlayer.progress },
@@ -229,6 +234,7 @@ struct AudioMiniPlayer: View {
                 )
                 .tint(.blue)
                 .frame(height: 20)
+                #endif
 
                 // Time + controls
                 HStack(spacing: 0) {
