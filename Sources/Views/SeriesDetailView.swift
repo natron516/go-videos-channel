@@ -203,30 +203,45 @@ struct SeriesDetailView: View {
     }
 
     private func playEpisode(_ episode: GOAudioAsset) {
+        // Mark as played
+        PlaybackTracker.shared.markPlayed(episode.id)
+
         let isVideo = episode.mediaType == "video"
         if isVideo {
             guard let url = URL(string: episode.audioUrl) else { return }
-            // Set up autoplay handler BEFORE presenting so the video player picks it up
             if autoplay {
                 AutoplayManager.shared.customNextHandler = { [self] in
+                    PlaybackTracker.shared.clearPosition(episode.id)
                     playNextEpisode(after: episode)
                 }
             } else {
-                AutoplayManager.shared.customNextHandler = nil
+                AutoplayManager.shared.customNextHandler = {
+                    PlaybackTracker.shared.clearPosition(episode.id)
+                }
             }
             presentPlayer(url: url)
         } else {
+            let savedPos = PlaybackTracker.shared.getPosition(episode.id)
+            audioPlayer.currentTrackId = episode.id
             audioPlayer.play(
                 url: episode.audioUrl,
                 title: episode.title,
                 artist: episode.artist
             )
+            if savedPos > 0 {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    audioPlayer.seek(to: savedPos / max(audioPlayer.duration, 1))
+                }
+            }
             if autoplay {
                 audioPlayer.onFinish = { [self] in
+                    PlaybackTracker.shared.clearPosition(episode.id)
                     playNextEpisode(after: episode)
                 }
             } else {
-                audioPlayer.onFinish = nil
+                audioPlayer.onFinish = {
+                    PlaybackTracker.shared.clearPosition(episode.id)
+                }
             }
         }
     }
@@ -251,9 +266,14 @@ struct SeriesEpisodeRow: View {
     let onTap: () -> Void
 
     @ObservedObject private var audioPlayer = AudioPlayerManager.shared
+    @ObservedObject private var tracker = PlaybackTracker.shared
 
     private var isCurrentlyPlaying: Bool {
         audioPlayer.currentTitle == episode.title && audioPlayer.isPlaying
+    }
+
+    private var isUnplayed: Bool {
+        !tracker.hasPlayed(episode.id)
     }
 
     private var isVideo: Bool {
@@ -297,11 +317,18 @@ struct SeriesEpisodeRow: View {
 
                 // Episode info
                 VStack(alignment: .leading, spacing: 3) {
-                    Text(episode.title)
-                        .font(.subheadline.bold())
-                        .foregroundColor(isCurrentlyPlaying ? .blue : .white)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.leading)
+                    HStack(spacing: 6) {
+                        if isUnplayed {
+                            Circle()
+                                .fill(Color.blue)
+                                .frame(width: 8, height: 8)
+                        }
+                        Text(episode.title)
+                            .font(.subheadline.bold())
+                            .foregroundColor(isCurrentlyPlaying ? .blue : .white)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
 
                     HStack(spacing: 8) {
                         // Media type icon

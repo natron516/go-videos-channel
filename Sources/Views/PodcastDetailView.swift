@@ -145,17 +145,28 @@ struct PodcastDetailView: View {
     // MARK: - Playback
 
     private func playEpisode(_ episode: GOPodcastEpisode) {
+        // Resume from saved position if available
+        let savedPos = PlaybackTracker.shared.getPosition(episode.id)
         audioPlayer.play(
             url: episode.audioUrl,
             title: episode.title,
             artist: podcast.title
         )
+        if savedPos > 0 {
+            audioPlayer.seek(to: savedPos / max(audioPlayer.duration, 1))
+        }
+        // Mark as played and set track ID for position saving
+        PlaybackTracker.shared.markPlayed(episode.id)
+        audioPlayer.currentTrackId = episode.id
         if autoplay {
             audioPlayer.onFinish = { [self] in
+                PlaybackTracker.shared.clearPosition(episode.id)
                 playNextEpisode(after: episode)
             }
         } else {
-            audioPlayer.onFinish = nil
+            audioPlayer.onFinish = {
+                PlaybackTracker.shared.clearPosition(episode.id)
+            }
         }
     }
 
@@ -185,9 +196,14 @@ struct EpisodeRow: View {
     let onPlay: () -> Void
 
     @ObservedObject private var audioPlayer = AudioPlayerManager.shared
+    @ObservedObject private var tracker = PlaybackTracker.shared
 
     private var isCurrentlyPlaying: Bool {
         audioPlayer.currentTitle == episode.title && audioPlayer.currentArtist == podcastTitle
+    }
+
+    private var isUnplayed: Bool {
+        !tracker.hasPlayed(episode.id)
     }
 
     var body: some View {
@@ -229,10 +245,17 @@ struct EpisodeRow: View {
                 )
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(episode.title)
-                        .font(.subheadline.bold())
-                        .foregroundColor(isCurrentlyPlaying ? .blue : .white)
-                        .lineLimit(2)
+                    HStack(spacing: 6) {
+                        if isUnplayed {
+                            Circle()
+                                .fill(Color.blue)
+                                .frame(width: 8, height: 8)
+                        }
+                        Text(episode.title)
+                            .font(.subheadline.bold())
+                            .foregroundColor(isCurrentlyPlaying ? .blue : .white)
+                            .lineLimit(2)
+                    }
                     HStack(spacing: 8) {
                         if let dur = episode.duration {
                             Text(dur)

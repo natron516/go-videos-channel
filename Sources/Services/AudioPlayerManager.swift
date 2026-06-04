@@ -13,6 +13,8 @@ class AudioPlayerManager: ObservableObject {
     @Published var duration: Double = 0
     @Published var isLoading = false
     @Published var hasItem = false
+    /// ID of the currently playing track (for position saving)
+    var currentTrackId: String?
 
     /// Called when the current track finishes playing (for autoplay)
     var onFinish: (() -> Void)?
@@ -89,11 +91,17 @@ class AudioPlayerManager: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Time observer for progress
+        // Time observer for progress + position saving
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        var saveCounter = 0
         timeObserver = newPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
             guard let self, let dur = self.player?.currentItem?.duration, !dur.isIndefinite, dur.seconds > 0 else { return }
             self.progress = time.seconds / dur.seconds
+            // Save position to Firestore every 10 seconds
+            saveCounter += 1
+            if saveCounter % 20 == 0, let trackId = self.currentTrackId {
+                PlaybackTracker.shared.savePosition(trackId, seconds: time.seconds)
+            }
         }
 
         // Observe end
