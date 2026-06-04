@@ -11,11 +11,31 @@ struct ArticleDetailView: View {
             Color.black.ignoresSafeArea()
             Color.clear.appBackground()
 
-            ArticleWebView(htmlContent: article.content, title: article.title)
+            if let pdfUrlStr = article.pdfUrl, !pdfUrlStr.isEmpty, let pdfUrl = URL(string: pdfUrlStr) {
+                PDFWebView(url: pdfUrl)
+            } else {
+                ArticleWebView(htmlContent: article.content, title: article.title)
+            }
         }
         .navigationTitle(article.title)
         .navigationBarTitleDisplayMode(.inline)
     }
+}
+
+// MARK: - PDF viewer via WKWebView
+struct PDFWebView: UIViewRepresentable {
+    let url: URL
+
+    func makeUIView(context: Context) -> WKWebView {
+        let webView = WKWebView()
+        webView.backgroundColor = UIColor.black
+        webView.scrollView.backgroundColor = UIColor.black
+        webView.isOpaque = false
+        webView.load(URLRequest(url: url))
+        return webView
+    }
+
+    func updateUIView(_ webView: WKWebView, context: Context) {}
 }
 
 // MARK: - WKWebView wrapper for HTML rendering

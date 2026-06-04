@@ -69,6 +69,7 @@ struct GOArticle: Identifiable, Codable {
     var content: String // HTML
     var excerpt: String
     var coverImageUrl: String?
+    var pdfUrl: String?
     var category: String
     var published: Bool
     var featured: Bool
@@ -76,7 +77,7 @@ struct GOArticle: Identifiable, Codable {
     var createdAt: Date?
 
     enum CodingKeys: String, CodingKey {
-        case id, title, author, content, excerpt, coverImageUrl, category
+        case id, title, author, content, excerpt, coverImageUrl, pdfUrl, category
         case published, featured, sortOrder, createdAt
     }
 
@@ -88,6 +89,7 @@ struct GOArticle: Identifiable, Codable {
         content = try container.decodeIfPresent(String.self, forKey: .content) ?? ""
         excerpt = try container.decodeIfPresent(String.self, forKey: .excerpt) ?? ""
         coverImageUrl = try container.decodeIfPresent(String.self, forKey: .coverImageUrl)
+        pdfUrl = try container.decodeIfPresent(String.self, forKey: .pdfUrl)
         category = try container.decodeIfPresent(String.self, forKey: .category) ?? "general"
         published = try container.decodeIfPresent(Bool.self, forKey: .published) ?? true
         featured = try container.decodeIfPresent(Bool.self, forKey: .featured) ?? false
