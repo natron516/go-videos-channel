@@ -583,6 +583,7 @@ struct ContentView: View {
         TabView(selection: $selectedTab) {
             // 0 — Discover
             NavigationStack { HomeView() }
+                .navigationTitle("")
                 .tabItem { Label("Discover", systemImage: "sparkle") }
                 .tag(0)
 

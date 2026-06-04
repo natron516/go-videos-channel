@@ -11,6 +11,11 @@ struct SeriesDetailView: View {
     @State private var isLoading = true
     @State private var error: String?
     @AppStorage("seriesAutoplay") private var autoplay: Bool = true
+    @State private var pinUnlocked = PinUnlockManager.shared.isUnlocked
+
+    private var requiresPin: Bool {
+        series.category.lowercased() == "sermons"
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -101,6 +106,13 @@ struct SeriesDetailView: View {
             }
         }
         .task { await loadEpisodes() }
+        .overlay {
+            if requiresPin && !pinUnlocked {
+                PinLockView {
+                    pinUnlocked = true
+                }
+            }
+        }
     }
 
     // MARK: - Series Header

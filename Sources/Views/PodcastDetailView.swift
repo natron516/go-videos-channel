@@ -10,6 +10,11 @@ struct PodcastDetailView: View {
     @State private var episodes: [GOPodcastEpisode] = []
     @State private var isLoading = true
     @State private var error: String?
+    @State private var pinUnlocked = PinUnlockManager.shared.isUnlocked
+
+    private var requiresPin: Bool {
+        podcast.category.lowercased() == "sermons"
+    }
 
     var body: some View {
         ZStack {
@@ -128,6 +133,13 @@ struct PodcastDetailView: View {
             }
         }
         .task { await load() }
+        .overlay {
+            if requiresPin && !pinUnlocked {
+                PinLockView {
+                    pinUnlocked = true
+                }
+            }
+        }
     }
 
     // MARK: - Playback

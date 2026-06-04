@@ -75,6 +75,9 @@ struct MuxAnalytics {
 // MARK: - Present AVPlayerViewController via UIKit root VC
 
 func presentPlayer(url: URL, autoplay: Bool = false, asset: MuxAsset? = nil) {
+    // Stop any audio playback before starting video
+    Task { @MainActor in AudioPlayerManager.shared.stop() }
+
     // Detect live asset: check manager first, fall back to preparing status
     let isLiveAsset: Bool
     if let asset = asset {

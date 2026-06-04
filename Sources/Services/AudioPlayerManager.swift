@@ -41,6 +41,9 @@ class AudioPlayerManager: ObservableObject {
     func play(url urlString: String, title: String, artist: String) {
         guard let url = URL(string: urlString) else { return }
 
+        // Dismiss any active video player first
+        dismissTopPlayer()
+
         // Stop any existing playback
         stop()
 
