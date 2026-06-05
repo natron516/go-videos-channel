@@ -15,11 +15,8 @@ struct GospelOutreachTVApp: App {
     init() {
         FirebaseApp.configure()
         SessionTracker.shared.start()
-        #if os(iOS)
-        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
-        try? AVAudioSession.sharedInstance().setActive(true)
-
-        #endif
+        // Audio session is configured lazily when the user actually plays something
+        // so we don't interrupt Apple Music / other audio on app launch.
     }
 
     #if os(iOS)

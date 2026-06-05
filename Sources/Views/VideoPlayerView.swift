@@ -75,6 +75,12 @@ struct MuxAnalytics {
 // MARK: - Present AVPlayerViewController via UIKit root VC
 
 func presentPlayer(url: URL, autoplay: Bool = false, asset: MuxAsset? = nil) {
+    // Activate audio session now that the user is actually playing something
+    #if !os(tvOS)
+    try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
+    try? AVAudioSession.sharedInstance().setActive(true)
+    #endif
+
     // Stop any audio playback before starting video
     Task { @MainActor in AudioPlayerManager.shared.stop() }
 

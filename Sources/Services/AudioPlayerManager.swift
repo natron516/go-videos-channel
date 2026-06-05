@@ -1,6 +1,7 @@
 import Foundation
 import AVFoundation
 import Combine
+import MediaPlayer
 
 @MainActor
 class AudioPlayerManager: ObservableObject {
@@ -23,11 +24,15 @@ class AudioPlayerManager: ObservableObject {
     private var timeObserver: Any?
     private var cancellables = Set<AnyCancellable>()
 
+    /// Cover image URL for Now Playing artwork
+    private var currentCoverUrl: String?
+
     private init() {
-        setupAudioSession()
+        setupRemoteCommandCenter()
     }
 
-    private func setupAudioSession() {
+    /// Activate the audio session on-demand (called right before playback starts).
+    private func activateAudioSessionIfNeeded() {
         #if !os(tvOS)
         do {
             try AVAudioSession.sharedInstance().setCategory(.playback, mode: .default)
@@ -38,19 +43,91 @@ class AudioPlayerManager: ObservableObject {
         #endif
     }
 
+    // MARK: - Remote Command Center (lock screen / Control Center controls)
+
+    private func setupRemoteCommandCenter() {
+        let commandCenter = MPRemoteCommandCenter.shared()
+
+        commandCenter.playCommand.addTarget { [weak self] _ in
+            self?.resume()
+            return .success
+        }
+        commandCenter.pauseCommand.addTarget { [weak self] _ in
+            self?.pause()
+            return .success
+        }
+        commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
+            self?.togglePlayPause()
+            return .success
+        }
+        commandCenter.skipForwardCommand.preferredIntervals = [15]
+        commandCenter.skipForwardCommand.addTarget { [weak self] _ in
+            self?.skip(seconds: 15)
+            return .success
+        }
+        commandCenter.skipBackwardCommand.preferredIntervals = [15]
+        commandCenter.skipBackwardCommand.addTarget { [weak self] _ in
+            self?.skip(seconds: -15)
+            return .success
+        }
+        commandCenter.changePlaybackPositionCommand.addTarget { [weak self] event in
+            guard let self, let posEvent = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
+            let dur = self.duration
+            guard dur > 0 else { return .commandFailed }
+            self.seek(to: posEvent.positionTime / dur)
+            return .success
+        }
+    }
+
+    private func updateNowPlayingInfo() {
+        var info = [String: Any]()
+        info[MPMediaItemPropertyTitle] = currentTitle
+        info[MPMediaItemPropertyArtist] = currentArtist
+        info[MPMediaItemPropertyPlaybackDuration] = duration
+        info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = player?.currentTime().seconds ?? 0
+        info[MPNowPlayingInfoPropertyPlaybackRate] = isPlaying ? 1.0 : 0.0
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+    }
+
+    private func loadNowPlayingArtwork() {
+        guard let urlStr = currentCoverUrl, let url = URL(string: urlStr) else { return }
+        Task.detached(priority: .utility) {
+            guard let (data, _) = try? await URLSession.shared.data(from: url),
+                  let image = UIImage(data: data) else { return }
+            let artwork = MPMediaItemArtwork(boundsSize: image.size) { _ in image }
+            await MainActor.run {
+                var info = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [:]
+                info[MPMediaItemPropertyArtwork] = artwork
+                MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+            }
+        }
+    }
+
+    private func clearNowPlayingInfo() {
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    }
+
     // MARK: - Public API
 
-    func play(url urlString: String, title: String, artist: String) {
+    func play(url urlString: String, title: String, artist: String, coverUrl: String? = nil) {
         guard let url = URL(string: urlString) else { return }
 
         // Dismiss any active video player first
         dismissTopPlayer()
 
+        // Reset progress immediately for UI
+        progress = 0
+        duration = 0
+
         // Stop any existing playback
         stop()
 
+        // Activate audio session now that the user is actually playing something
+        activateAudioSessionIfNeeded()
+
         currentTitle = title
         currentArtist = artist
+        currentCoverUrl = coverUrl
         isLoading = true
         hasItem = true
 
@@ -71,6 +148,8 @@ class AudioPlayerManager: ObservableObject {
                     }
                     self.player?.play()
                     self.isPlaying = true
+                    self.updateNowPlayingInfo()
+                    self.loadNowPlayingArtwork()
                 case .failed:
                     self.isLoading = false
                     self.isPlaying = false
@@ -91,7 +170,7 @@ class AudioPlayerManager: ObservableObject {
             }
             .store(in: &cancellables)
 
-        // Time observer for progress + position saving
+        // Time observer for progress + position saving + Now Playing updates
         let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
         var saveCounter = 0
         timeObserver = newPlayer.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
@@ -99,18 +178,25 @@ class AudioPlayerManager: ObservableObject {
             self.progress = time.seconds / dur.seconds
             // Save position to Firestore every 10 seconds
             saveCounter += 1
-            if saveCounter % 20 == 0, let trackId = self.currentTrackId {
-                PlaybackTracker.shared.savePosition(trackId, seconds: time.seconds)
+            if saveCounter % 20 == 0 {
+                if let trackId = self.currentTrackId {
+                    PlaybackTracker.shared.savePosition(trackId, seconds: time.seconds)
+                }
+                // Update Now Playing elapsed time periodically
+                self.updateNowPlayingInfo()
             }
         }
 
-        // Observe end
+        // Observe end — dispatch onFinish async to avoid cancelling the active sink
         NotificationCenter.default.publisher(for: .AVPlayerItemDidPlayToEndTime, object: item)
             .receive(on: RunLoop.main)
             .sink { [weak self] _ in
                 self?.isPlaying = false
                 self?.progress = 0
-                self?.onFinish?()
+                let finish = self?.onFinish
+                DispatchQueue.main.async {
+                    finish?()
+                }
             }
             .store(in: &cancellables)
     }
@@ -118,11 +204,13 @@ class AudioPlayerManager: ObservableObject {
     func pause() {
         player?.pause()
         isPlaying = false
+        updateNowPlayingInfo()
     }
 
     func resume() {
         player?.play()
         isPlaying = true
+        updateNowPlayingInfo()
     }
 
     func stop() {
@@ -139,7 +227,9 @@ class AudioPlayerManager: ObservableObject {
         duration = 0
         currentTitle = ""
         currentArtist = ""
+        currentCoverUrl = nil
         cancellables.removeAll()
+        clearNowPlayingInfo()
     }
 
     func seek(to fraction: Double) {

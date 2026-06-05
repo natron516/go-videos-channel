@@ -103,6 +103,12 @@ struct DownloadsView: View {
     // MARK: - Play Downloaded Video
 
     private func playDownloadedVideo(_ download: DownloadedVideo) {
+        // Activate audio session now that the user is actually playing something
+        #if !os(tvOS)
+        try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .moviePlayback)
+        try? AVAudioSession.sharedInstance().setActive(true)
+        #endif
+
         guard let localURL = downloadManager.localAssetURL(for: download.id) else {
             // Bookmark no longer valid — clean up
             downloadManager.deleteDownload(assetId: download.id)
