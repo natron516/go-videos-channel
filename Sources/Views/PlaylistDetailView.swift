@@ -19,6 +19,7 @@ struct PlaylistDetailView: View {
     @State private var musicPlaylists: [MusicKit.Playlist] = []
     @State private var isLoading = true
     @State private var showDeleteConfirm = false
+    @State private var showAddVideos = false
 
     var playlist: Playlist? {
         manager.playlists.first { $0.id == playlistId }
@@ -94,10 +95,16 @@ struct PlaylistDetailView: View {
                             .foregroundColor(.secondary)
                         Text("Empty Playlist")
                             .font(.title)
-                        Text("Long press any video, audio, book, article, or music to add it here")
+                        Text("Tap the + button to browse and add videos")
                             .font(.callout)
                             .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
+                        Button {
+                            showAddVideos = true
+                        } label: {
+                            Label("Add Videos", systemImage: "plus.circle.fill")
+                        }
+                        .buttonStyle(.borderedProminent)
                     }
                     .padding(40)
                 } else {
@@ -174,7 +181,8 @@ struct PlaylistDetailView: View {
                                                     audioPlayer.play(
                                                         url: audio.audioUrl,
                                                         title: audio.title,
-                                                        artist: audio.artist
+                                                        artist: audio.artist,
+                                                        coverUrl: audio.coverImageUrl
                                                     )
                                                 } onRemove: {
                                                     manager.removeItem(
@@ -364,6 +372,13 @@ struct PlaylistDetailView: View {
             #if !os(tvOS)
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
+                    showAddVideos = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
                     sharePlaylist()
                 } label: {
                     Image(systemName: "square.and.arrow.up")
@@ -378,6 +393,13 @@ struct PlaylistDetailView: View {
             }
             #else
             ToolbarItem(placement: .automatic) {
+                Button {
+                    showAddVideos = true
+                } label: {
+                    Image(systemName: "plus")
+                }
+            }
+            ToolbarItem(placement: .automatic) {
                 Button(role: .destructive) {
                     showDeleteConfirm = true
                 } label: {
@@ -385,6 +407,10 @@ struct PlaylistDetailView: View {
                 }
             }
             #endif
+        }
+        .sheet(isPresented: $showAddVideos) {
+            AddVideosToPlaylistView(playlistId: playlistId)
+                .environmentObject(api)
         }
         .alert("Delete Playlist?", isPresented: $showDeleteConfirm) {
             Button("Delete", role: .destructive) {
