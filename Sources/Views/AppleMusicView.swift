@@ -56,8 +56,7 @@ struct CuratedMusic {
     ]
 
     static let playlistIDs: [String] = [
-        "pl.u-V9xKJUEWMY9J", // Edifying Songs Playlist 1
-        "pl.u-d2ye0TD9Jr8E", // Playlist of Good Music
+        // Managed via admin portal (Firebase config/music.playlists)
     ]
 }
 
@@ -84,11 +83,14 @@ struct AppleMusicView: View {
     @State private var artists: [ArtistGroup] = []
     @State private var addToPlaylistItem: PlaylistItem? = nil
     @State private var showAddToPlaylist = false
+    @State private var showAddCustomPlaylist = false
+    @State private var customPlaylistLink = ""
+    @State private var customPlaylistError: String?
+    @State private var userPlaylists: [MusicKit.Playlist] = []
 
     var body: some View {
         ZStack {
-            Color.clear.appBackground()
-
+            Color.clear
             if !music.isAuthorized {
                 authPromptView
             } else if isLoading {
@@ -356,6 +358,13 @@ struct AppleMusicView: View {
                         .buttonStyle(.plain)
                         .contextMenu {
                             Button {
+                                Task {
+                                    try? await MusicLibrary.shared.add(album)
+                                }
+                            } label: {
+                                Label("Add to Apple Music Library", systemImage: "plus.circle")
+                            }
+                            Button {
                                 addToPlaylistItem = PlaylistItem(type: "music", itemId: album.id.rawValue)
                                 showAddToPlaylist = true
                             } label: {
@@ -370,16 +379,23 @@ struct AppleMusicView: View {
                 let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: 5)
                 #else
                 let columns = UIDevice.current.userInterfaceIdiom == .pad
-                    ? Array(repeating: GridItem(.flexible(), spacing: 16), count: 4)
-                    : Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+                    ? Array(repeating: GridItem(.flexible(), spacing: 10), count: 6)
+                    : Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
                 #endif
 
-                LazyVGrid(columns: columns, spacing: 16) {
+                LazyVGrid(columns: columns, spacing: 10) {
                     ForEach(filtered) { album in
                         NavigationLink(destination: AlbumDetailView(album: album)) {
                             AlbumCardView(album: album)
                         }
                         .contextMenu {
+                            Button {
+                                Task {
+                                    try? await MusicLibrary.shared.add(album)
+                                }
+                            } label: {
+                                Label("Add to Apple Music Library", systemImage: "plus.circle")
+                            }
                             Button {
                                 addToPlaylistItem = PlaylistItem(type: "music", itemId: album.id.rawValue)
                                 showAddToPlaylist = true
@@ -458,24 +474,51 @@ struct AppleMusicView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding(40)
-            } else if curatedPlaylists.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "music.note.list")
-                        .font(.system(size: 40))
-                        .foregroundColor(.secondary)
-                    Text("No playlists yet")
-                        .foregroundColor(.secondary)
-                }
-                .frame(maxWidth: .infinity)
-                .padding(40)
             } else {
                 LazyVStack(spacing: 12) {
+                    // Add custom playlist button
+                    Button { showAddCustomPlaylist = true } label: {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title3)
+                                .foregroundColor(.pink)
+                            Text("Add a Playlist")
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.white)
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .foregroundColor(.white.opacity(0.3))
+                                .font(.caption)
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.white.opacity(0.06))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.horizontal, 16)
+
+                    // Add playlist sheet
+                    .sheet(isPresented: $showAddCustomPlaylist) {
+                        addCustomPlaylistSheet
+                    }
+
+                    // Church playlists
                     ForEach(curatedPlaylists) { playlist in
                         NavigationLink(destination: PlaylistMusicDetailView(playlist: playlist)) {
                             MusicPlaylistRowView(playlist: playlist)
                         }
                         .buttonStyle(.plain)
                         .contextMenu {
+                            Button {
+                                Task {
+                                    try? await MusicLibrary.shared.add(playlist)
+                                }
+                            } label: {
+                                Label("Add to Apple Music Library", systemImage: "plus.circle")
+                            }
                             Button {
                                 addToPlaylistItem = PlaylistItem(type: "music-playlist", itemId: playlist.id.rawValue)
                                 showAddToPlaylist = true
@@ -484,15 +527,199 @@ struct AppleMusicView: View {
                             }
                         }
                     }
+
+                    // User-added playlists
+                    if !userPlaylists.isEmpty {
+                        Text("My Playlists")
+                            .font(.caption.bold())
+                            .foregroundColor(.secondary)
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+
+                        ForEach(userPlaylists) { playlist in
+                            NavigationLink(destination: PlaylistMusicDetailView(playlist: playlist)) {
+                                MusicPlaylistRowView(playlist: playlist)
+                            }
+                            .buttonStyle(.plain)
+                            .contextMenu {
+                                Button {
+                                    Task {
+                                        try? await MusicLibrary.shared.add(playlist)
+                                    }
+                                } label: {
+                                    Label("Add to Apple Music Library", systemImage: "plus.circle")
+                                }
+                                Button(role: .destructive) {
+                                    removeUserPlaylist(playlist.id.rawValue)
+                                } label: {
+                                    Label("Remove from App", systemImage: "trash")
+                                }
+                            }
+                        }
+                    }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 0)
             }
         }
         .task {
             if curatedPlaylists.isEmpty {
                 await loadCuratedPlaylists()
             }
+            await loadUserPlaylists()
         }
+    }
+
+    // MARK: - Add Custom Playlist Sheet
+
+    private var addCustomPlaylistSheet: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                VStack(spacing: 8) {
+                    Image(systemName: "music.note.list")
+                        .font(.system(size: 44))
+                        .foregroundColor(.pink)
+                    Text("Add an Apple Music Playlist")
+                        .font(.title3.bold())
+                        .foregroundColor(.white)
+                    Text("Paste a link to any Apple Music playlist")
+                        .font(.subheadline)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.top, 20)
+
+                TextField("https://music.apple.com/...", text: $customPlaylistLink)
+                    .textFieldStyle(.roundedBorder)
+                    .autocapitalization(.none)
+                    .disableAutocorrection(true)
+                    .padding(.horizontal, 20)
+
+                if let err = customPlaylistError {
+                    Text(err)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                }
+
+                Button {
+                    Task { await addCustomPlaylist() }
+                } label: {
+                    HStack {
+                        Image(systemName: "plus")
+                        Text("Add Playlist")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .padding(.horizontal, 20)
+                .disabled(customPlaylistLink.trimmingCharacters(in: .whitespaces).isEmpty)
+
+                Spacer()
+            }
+            .background(Color.black)
+            .navigationTitle("Add Playlist")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        customPlaylistLink = ""
+                        customPlaylistError = nil
+                        showAddCustomPlaylist = false
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Custom Playlist Helpers
+
+    private func addCustomPlaylist() async {
+        customPlaylistError = nil
+        let link = customPlaylistLink.trimmingCharacters(in: .whitespaces)
+
+        // Extract playlist ID from Apple Music URL
+        // Format: https://music.apple.com/us/playlist/name/pl.xxxxx
+        guard let playlistId = extractPlaylistId(from: link) else {
+            customPlaylistError = "Invalid Apple Music playlist link. Copy the link from Apple Music and paste it here."
+            return
+        }
+
+        // Check if already added
+        let saved = savedUserPlaylistIds()
+        if saved.contains(playlistId) {
+            customPlaylistError = "This playlist is already added."
+            return
+        }
+
+        // Try to load it from Apple Music catalog
+        do {
+            let request = MusicCatalogResourceRequest<MusicKit.Playlist>(matching: \.id, equalTo: MusicItemID(playlistId))
+            let response = try await request.response()
+            guard let playlist = response.items.first else {
+                customPlaylistError = "Playlist not found. Make sure the link is correct and the playlist is public."
+                return
+            }
+
+            // Save to UserDefaults
+            var ids = saved
+            ids.append(playlistId)
+            UserDefaults.standard.set(ids, forKey: "userMusicPlaylistIds")
+
+            userPlaylists.append(playlist)
+            customPlaylistLink = ""
+            showAddCustomPlaylist = false
+        } catch {
+            customPlaylistError = "Could not load playlist: \(error.localizedDescription)"
+        }
+    }
+
+    private func extractPlaylistId(from urlString: String) -> String? {
+        // Handle full URLs: https://music.apple.com/.../pl.xxxxx
+        if let url = URL(string: urlString),
+           let lastComponent = url.pathComponents.last,
+           lastComponent.hasPrefix("pl.") {
+            return lastComponent
+        }
+        // Handle raw playlist IDs
+        let trimmed = urlString.trimmingCharacters(in: .whitespaces)
+        if trimmed.hasPrefix("pl.") {
+            return trimmed
+        }
+        return nil
+    }
+
+    private func savedUserPlaylistIds() -> [String] {
+        UserDefaults.standard.stringArray(forKey: "userMusicPlaylistIds") ?? []
+    }
+
+    private func removeUserPlaylist(_ id: String) {
+        var ids = savedUserPlaylistIds()
+        ids.removeAll { $0 == id }
+        UserDefaults.standard.set(ids, forKey: "userMusicPlaylistIds")
+        userPlaylists.removeAll { $0.id.rawValue == id }
+    }
+
+    private func loadUserPlaylists() async {
+        let ids = savedUserPlaylistIds()
+        guard !ids.isEmpty else { return }
+        var loaded: [MusicKit.Playlist] = []
+        for id in ids {
+            do {
+                let request = MusicCatalogResourceRequest<MusicKit.Playlist>(matching: \.id, equalTo: MusicItemID(id))
+                let response = try await request.response()
+                if let playlist = response.items.first {
+                    loaded.append(playlist)
+                }
+            } catch { /* skip */ }
+        }
+        userPlaylists = loaded
     }
 
     private var songsSection: some View {
@@ -716,6 +943,7 @@ struct AlbumCardView: View {
                     .lineLimit(1)
             }
         }
+        .frame(maxWidth: .infinity)
         .padding(8)
         .background(
             RoundedRectangle(cornerRadius: 12)
@@ -1011,6 +1239,23 @@ struct PlaylistMusicDetailView: View {
                                 )
                                 .clipShape(Capsule())
                             }
+
+                            Button {
+                                Task {
+                                    try? await MusicLibrary.shared.add(playlist)
+                                }
+                            } label: {
+                                HStack {
+                                    Image(systemName: "plus")
+                                    Text("Add to My Library")
+                                }
+                                .font(.subheadline.weight(.semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 8)
+                                .background(Color.white.opacity(0.1))
+                                .clipShape(Capsule())
+                            }
                         }
                         .padding(.vertical, 20)
 
@@ -1159,16 +1404,23 @@ struct ArtistAlbumsView: View {
                 let columns = Array(repeating: GridItem(.flexible(), spacing: 16), count: 5)
                 #else
                 let columns = UIDevice.current.userInterfaceIdiom == .pad
-                    ? Array(repeating: GridItem(.flexible(), spacing: 16), count: 4)
-                    : Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+                    ? Array(repeating: GridItem(.flexible(), spacing: 10), count: 6)
+                    : Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
                 #endif
 
-                LazyVGrid(columns: columns, spacing: 16) {
+                LazyVGrid(columns: columns, spacing: 10) {
                     ForEach(artist.albums) { album in
                         NavigationLink(destination: AlbumDetailView(album: album)) {
                             AlbumCardView(album: album)
                         }
                         .contextMenu {
+                            Button {
+                                Task {
+                                    try? await MusicLibrary.shared.add(album)
+                                }
+                            } label: {
+                                Label("Add to Apple Music Library", systemImage: "plus.circle")
+                            }
                             Button {
                                 addToPlaylistItem = PlaylistItem(type: "music", itemId: album.id.rawValue)
                                 showAddToPlaylist = true
