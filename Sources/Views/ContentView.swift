@@ -472,8 +472,19 @@ struct TVContentView: View {
                     .fill(Color.white.opacity(0.08))
                     .frame(width: 1)
 
-                ZStack {
-                    VStack(spacing: 0) {
+                VStack(spacing: 0) {
+                    if audioPlayer.hasItem && showFullAudioPlayer {
+                        // Full audio player — takes over the content area entirely
+                        TVAudioPlayerView(onCollapse: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showFullAudioPlayer = false
+                            }
+                        })
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .focusSection()
+                        .transition(.opacity)
+                    } else {
+                        // Normal content
                         NavigationStack(path: $navPath) {
                             detailView
                                 .id(selection)
@@ -489,17 +500,6 @@ struct TVContentView: View {
                                 }
                             })
                         }
-                    }
-
-                    // Full audio player overlay
-                    if audioPlayer.hasItem && showFullAudioPlayer {
-                        TVAudioPlayerView(onCollapse: {
-                            withAnimation(.easeInOut(duration: 0.3)) {
-                                showFullAudioPlayer = false
-                            }
-                        })
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .transition(.opacity)
                     }
                 }
             }

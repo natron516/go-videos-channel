@@ -22,27 +22,30 @@ struct TVAudioPlayerView: View {
     }
 
     var body: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack {
             // Background
             backgroundLayer
 
-            // Back button (top-left)
-            Button {
-                onCollapse()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 50, height: 50)
-                    .background(Color.white.opacity(0.15))
-                    .clipShape(Circle())
-            }
-            .focused($focusedControl, equals: .back)
-            .padding(.top, 40)
-            .padding(.leading, 40)
+            // All controls in a single VStack for proper focus ordering
+            VStack(spacing: 24) {
+                // Back button row (top)
+                HStack {
+                    Button {
+                        onCollapse()
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(.white)
+                            .frame(width: 50, height: 50)
+                            .background(Color.white.opacity(0.15))
+                            .clipShape(Circle())
+                    }
+                    .focused($focusedControl, equals: .back)
+                    Spacer()
+                }
+                .padding(.horizontal, 40)
+                .padding(.top, 20)
 
-            // Content
-            VStack(spacing: 32) {
                 Spacer()
 
                 // Cover art
@@ -65,13 +68,13 @@ struct TVAudioPlayerView: View {
                 }
                 .padding(.horizontal, 60)
 
-                // Progress bar + times
+                // Progress bar + times (focusable scrubber)
                 progressSection
 
                 // Transport controls
                 transportControls
 
-                // Playback Speed button (collapsed by default)
+                // Playback Speed button
                 speedButton
 
                 // Speed options (expanded)
@@ -83,6 +86,9 @@ struct TVAudioPlayerView: View {
                 Spacer()
             }
         }
+        #if os(tvOS)
+        .focusSection()
+        #endif
         .onAppear {
             focusedControl = .playPause
             playbackSpeed = audioPlayer.playbackRate
