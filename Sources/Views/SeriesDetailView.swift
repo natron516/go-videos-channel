@@ -226,7 +226,8 @@ struct SeriesDetailView: View {
             audioPlayer.play(
                 url: episode.audioUrl,
                 title: episode.title,
-                artist: episode.artist
+                artist: episode.artist,
+                coverUrl: episode.coverImageUrl
             )
             if savedPos > 0 {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {

@@ -1,20 +1,47 @@
 import SwiftUI
+import os
 
 #if !os(tvOS)
 import WebKit
 
+private let logger = Logger(subsystem: "com.gospeloutreacholympia.tv", category: "ArticleDetail")
+
 struct ArticleDetailView: View {
     let article: GOArticle
+
+    private var hasPDF: Bool {
+        guard let url = article.pdfUrl, !url.isEmpty else { return false }
+        return URL(string: url) != nil
+    }
+
+    private var hasRealContent: Bool {
+        let stripped = article.content
+            .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return !stripped.isEmpty
+    }
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
             Color.clear.appBackground()
 
-            if let pdfUrlStr = article.pdfUrl, !pdfUrlStr.isEmpty, let pdfUrl = URL(string: pdfUrlStr) {
+            if hasPDF, let pdfUrl = URL(string: article.pdfUrl!) {
                 PDFWebView(url: pdfUrl)
-            } else {
+            } else if hasRealContent {
                 ArticleWebView(htmlContent: article.content, title: article.title)
+            } else {
+                VStack(spacing: 16) {
+                    Image(systemName: "doc.text")
+                        .font(.system(size: 50))
+                        .foregroundColor(.secondary)
+                    Text("No content available")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                    Text("pdfUrl: \(article.pdfUrl ?? "none")")
+                        .font(.caption2)
+                        .foregroundColor(.secondary.opacity(0.5))
+                }
             }
         }
         .navigationTitle(article.title)
@@ -25,17 +52,40 @@ struct ArticleDetailView: View {
 // MARK: - PDF viewer via WKWebView
 struct PDFWebView: UIViewRepresentable {
     let url: URL
+    @State private var hasLoaded = false
 
     func makeUIView(context: Context) -> WKWebView {
-        let webView = WKWebView()
+        let config = WKWebViewConfiguration()
+        config.allowsInlineMediaPlayback = true
+        let webView = WKWebView(frame: .zero, configuration: config)
         webView.backgroundColor = UIColor.black
         webView.scrollView.backgroundColor = UIColor.black
         webView.isOpaque = false
+        webView.navigationDelegate = context.coordinator
         webView.load(URLRequest(url: url))
         return webView
     }
 
     func updateUIView(_ webView: WKWebView, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    class Coordinator: NSObject, WKNavigationDelegate {
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            print("[PDF] Load failed: \(error.localizedDescription)")
+        }
+        func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            print("[PDF] Provisional load failed: \(error.localizedDescription)")
+            // Fallback: try opening via Google Docs viewer
+            if let url = webView.url ?? navigation?.effectiveContentMode as? URL {
+                let googleViewer = URL(string: "https://docs.google.com/gview?embedded=true&url=\(url.absoluteString)")!
+                webView.load(URLRequest(url: googleViewer))
+            }
+        }
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            print("[PDF] Loaded successfully")
+        }
+    }
 }
 
 // MARK: - WKWebView wrapper for HTML rendering

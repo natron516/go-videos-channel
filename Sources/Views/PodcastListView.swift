@@ -12,12 +12,8 @@ struct PodcastListView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
-            Color.clear.appBackground()
-
-            if isLoading {
-                ProgressView("Loading…")
-            } else if let err = error {
+            Color.clear
+            if let err = error {
                 VStack(spacing: 16) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 50))
@@ -32,7 +28,7 @@ struct PodcastListView: View {
                         .buttonStyle(.borderedProminent)
                 }
                 .padding(40)
-            } else if seriesList.isEmpty && podcasts.isEmpty {
+            } else if !isLoading && seriesList.isEmpty && podcasts.isEmpty {
                 VStack(spacing: 16) {
                     Image(systemName: "mic")
                         .font(.system(size: 50))
@@ -91,6 +87,13 @@ struct PodcastListView: View {
                 }
             }
         }
+        .overlay {
+            if isLoading {
+                ProgressView("Loading…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black.opacity(0.3))
+            }
+        }
         .task { await load() }
     }
 
@@ -98,7 +101,7 @@ struct PodcastListView: View {
         let pre = ContentPreloader.shared
         if let p = pre.podcasts, let s = pre.series, let a = pre.audioAssets {
             podcasts = p
-            seriesList = s
+            seriesList = s.filter { $0.category.lowercased() != "audiobook" }
             allAudioAssets = a
             isLoading = false
             return
@@ -111,7 +114,7 @@ struct PodcastListView: View {
             async let audioTask = contentAPI.fetchAudio()
             let (p, s, a) = try await (podcastsTask, seriesTask, audioTask)
             podcasts = p
-            seriesList = s
+            seriesList = s.filter { $0.category.lowercased() != "audiobook" }
             allAudioAssets = a
         } catch {
             self.error = error.localizedDescription

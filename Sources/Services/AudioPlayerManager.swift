@@ -14,6 +14,7 @@ class AudioPlayerManager: ObservableObject {
     @Published var duration: Double = 0
     @Published var isLoading = false
     @Published var hasItem = false
+    @Published var playbackRate: Float = 1.0
     /// ID of the currently playing track (for position saving)
     var currentTrackId: String?
 
@@ -26,6 +27,9 @@ class AudioPlayerManager: ObservableObject {
 
     /// Cover image URL for Now Playing artwork
     private var currentCoverUrl: String?
+
+    /// Public read access to cover URL for UI
+    var currentCoverUrlPublic: String? { currentCoverUrl }
 
     private init() {
         setupRemoteCommandCenter()
@@ -146,7 +150,7 @@ class AudioPlayerManager: ObservableObject {
                     if let dur = self.player?.currentItem?.duration, !dur.isIndefinite {
                         self.duration = CMTimeGetSeconds(dur)
                     }
-                    self.player?.play()
+                    self.player?.rate = self.playbackRate
                     self.isPlaying = true
                     self.updateNowPlayingInfo()
                     self.loadNowPlayingArtwork()
@@ -208,7 +212,7 @@ class AudioPlayerManager: ObservableObject {
     }
 
     func resume() {
-        player?.play()
+        player?.rate = playbackRate
         isPlaying = true
         updateNowPlayingInfo()
     }
@@ -229,6 +233,7 @@ class AudioPlayerManager: ObservableObject {
         currentArtist = ""
         currentCoverUrl = nil
         cancellables.removeAll()
+        playbackRate = 1.0
         clearNowPlayingInfo()
     }
 
@@ -254,6 +259,14 @@ class AudioPlayerManager: ObservableObject {
 
     func togglePlayPause() {
         if isPlaying { pause() } else { resume() }
+    }
+
+    func setPlaybackRate(_ rate: Float) {
+        playbackRate = rate
+        if isPlaying {
+            player?.rate = rate
+        }
+        updateNowPlayingInfo()
     }
 
     // MARK: - Formatted time helpers

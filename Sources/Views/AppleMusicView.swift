@@ -589,7 +589,9 @@ struct AppleMusicView: View {
                 .padding(.top, 20)
 
                 TextField("https://music.apple.com/...", text: $customPlaylistLink)
+                    #if !os(tvOS)
                     .textFieldStyle(.roundedBorder)
+                    #endif
                     .autocapitalization(.none)
                     .disableAutocorrection(true)
                     .padding(.horizontal, 20)
@@ -625,7 +627,9 @@ struct AppleMusicView: View {
             }
             .background(Color.black)
             .navigationTitle("Add Playlist")
+            #if !os(tvOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

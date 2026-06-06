@@ -70,6 +70,7 @@
 		696DC44702590650C67A0E84 /* VideoDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB1DCFDA0ABE328C120AD7F /* VideoDownloadManager.swift */; };
 		6A13C68CE85152165CB1733F /* WatchTimerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62057527ABAE28173080BB26 /* WatchTimerManager.swift */; };
 		6A3F14F7A71F0390A7AEAA85 /* AlbumDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BF40A96E6DED709473D20C93 /* AlbumDetailView.swift */; };
+		6A86C4DB26839E9C50671906 /* TVAudioPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63145FF02A86ADEEC8E7AAAE /* TVAudioPlayerView.swift */; };
 		6D0849175356ECC2B9DFA619 /* AuthService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF44774A7E29CBA566F7B616 /* AuthService.swift */; };
 		6DED98CB1E7F4A0D09DF2B47 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 5C61C0AD64DD13DEC5E84967 /* FirebaseRemoteConfig */; };
 		6EE469E8C1B5BD7BF77CBD1E /* VideoDownloadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2FB1DCFDA0ABE328C120AD7F /* VideoDownloadManager.swift */; };
@@ -83,6 +84,7 @@
 		76E59ADE90BBE8204F87FFD5 /* MuxModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA5B13C720CB1870157FFA85 /* MuxModels.swift */; };
 		76FF919D5B0752221F11D7EB /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6BB42A7C8E837D2D8F177E92 /* ContentView.swift */; };
 		776A53C0ABA42D38A286E9A5 /* SessionTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DEF83F4CB5DB4F1BCF6F957 /* SessionTracker.swift */; };
+		777409169E34DF02A5F50A3E /* TVAudioPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 63145FF02A86ADEEC8E7AAAE /* TVAudioPlayerView.swift */; };
 		77DA59FFD756859D52166AE9 /* BookListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 350D60502108F885B3AFAEBE /* BookListView.swift */; };
 		77E5A5C4EBAB5B3297F1D9BE /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = 198DFAB326E47D6CBFE8E37C /* FirebaseFirestore */; };
 		78E6DF0114FA591C67F7333B /* PlaybackTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AB51D40E5C5A157F6A4849F /* PlaybackTracker.swift */; };
@@ -199,6 +201,7 @@
 		5BD4BB34D3DA66E0357FBA38 /* IntroSplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IntroSplashView.swift; sourceTree = "<group>"; };
 		62057527ABAE28173080BB26 /* WatchTimerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchTimerManager.swift; sourceTree = "<group>"; };
 		624094A79FC5FC6237E1F7FA /* ReadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReadView.swift; sourceTree = "<group>"; };
+		63145FF02A86ADEEC8E7AAAE /* TVAudioPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TVAudioPlayerView.swift; sourceTree = "<group>"; };
 		638AD0CB70F669C5AC4BB161 /* AppleMusicView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppleMusicView.swift; sourceTree = "<group>"; };
 		646E57631B8B719E54844D3F /* MuxAPI.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MuxAPI.swift; sourceTree = "<group>"; };
 		66C02F962520C695D3B6AD13 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -405,6 +408,7 @@
 				7EBCD7BA3DEC501F82C74E3B /* SeriesDetailView.swift */,
 				1BD92E99B40CCBA8DC03A528 /* SermonLibraryView.swift */,
 				E54B22376172037E8F9AA48B /* Shared.swift */,
+				63145FF02A86ADEEC8E7AAAE /* TVAudioPlayerView.swift */,
 				48E7B9F8772B82F3F354D570 /* VideoPlayerView.swift */,
 				35FE81DE79B1002FDF74E9FF /* WatchTimerLockView.swift */,
 				32539140281A45F015BC6E63 /* WatchTimerSetupView.swift */,
@@ -601,6 +605,7 @@
 				0AD1F60294B31719E317444E /* SermonLibraryView.swift in Sources */,
 				776A53C0ABA42D38A286E9A5 /* SessionTracker.swift in Sources */,
 				AF32DF88449F43A770136EFC /* Shared.swift in Sources */,
+				777409169E34DF02A5F50A3E /* TVAudioPlayerView.swift in Sources */,
 				D16AC6ED72902428AA035328 /* TVLoginView.swift in Sources */,
 				696DC44702590650C67A0E84 /* VideoDownloadManager.swift in Sources */,
 				BBC897417C90F1383FEFEAE8 /* VideoPlayerView.swift in Sources */,
@@ -676,6 +681,7 @@
 				21D3DE69E94859B429B4834F /* SermonLibraryView.swift in Sources */,
 				1C2D65BDA5CBAF3DE3F4A6A2 /* SessionTracker.swift in Sources */,
 				400B05D98D4C65295F52BEEB /* Shared.swift in Sources */,
+				6A86C4DB26839E9C50671906 /* TVAudioPlayerView.swift in Sources */,
 				9E7679E6C927C994EE7718FB /* TVLoginView.swift in Sources */,
 				6EE469E8C1B5BD7BF77CBD1E /* VideoDownloadManager.swift in Sources */,
 				B603BB0CFF1D2E580501DC72 /* VideoPlayerView.swift in Sources */,

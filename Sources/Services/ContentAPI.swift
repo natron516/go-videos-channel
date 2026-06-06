@@ -92,7 +92,7 @@ class ContentAPI: ObservableObject {
         let (data, _) = try await URLSession.shared.data(for: req)
         let wrapper = try JSONDecoder().decode(SeriesResponse.self, from: data)
         return wrapper.series
-            .filter { $0.enabled }
+            .filter { $0.enabled && $0.category != "hidden" }
             .sorted { $0.sortOrder < $1.sortOrder }
     }
 

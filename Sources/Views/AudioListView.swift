@@ -5,6 +5,7 @@ struct AudioListView: View {
     @ObservedObject private var audioPlayer = AudioPlayerManager.shared
 
     @State private var allAudioAssets: [GOAudioAsset] = []
+    @State private var audiobookSeries: [GOSeries] = []
     @State private var isLoading = true
     @State private var error: String?
 
@@ -13,8 +14,8 @@ struct AudioListView: View {
         Array(repeating: GridItem(.flexible(), spacing: 24), count: 4)
         #else
         UIDevice.current.userInterfaceIdiom == .pad
-            ? Array(repeating: GridItem(.flexible(), spacing: 20), count: 3)
-            : Array(repeating: GridItem(.flexible(), spacing: 12), count: 2)
+            ? Array(repeating: GridItem(.flexible(), spacing: 14), count: 6)
+            : Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
         #endif
     }
 
@@ -25,12 +26,8 @@ struct AudioListView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
-            Color.clear.appBackground()
-
-            if isLoading {
-                ProgressView("Loading Audio…")
-            } else if let err = error {
+            Color.clear
+            if let err = error {
                 VStack(spacing: 16) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 50))
@@ -45,39 +42,108 @@ struct AudioListView: View {
                         .buttonStyle(.borderedProminent)
                 }
                 .padding(40)
-            } else if singleAssets.isEmpty {
+            } else if !isLoading && singleAssets.isEmpty && audiobookSeries.isEmpty {
                 VStack(spacing: 16) {
                     Image(systemName: "waveform")
                         .font(.system(size: 50))
                         .foregroundColor(.secondary)
-                    Text("No Audio Yet")
+                    Text("No Audiobooks Yet")
                         .font(.title3)
                         .foregroundColor(.secondary)
                 }
-            } else {
+            } else if !isLoading {
                 VStack(spacing: 0) {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 0) {
-                            // ── SINGLES SECTION ──
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Audio")
-                                    .font(.title2.bold())
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 16)
-                                    .padding(.top, 16)
+                            // ── AUDIOBOOK SERIES ──
+                            if !audiobookSeries.isEmpty {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Audiobook Series")
+                                        .font(.title2.bold())
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 16)
+                                        .padding(.top, 16)
 
-                                LazyVGrid(columns: columns, spacing: 16) {
-                                    ForEach(singleAssets) { asset in
-                                        AudioAssetCard(asset: asset) {
-                                            audioPlayer.play(
-                                                url: asset.audioUrl,
-                                                title: asset.title,
-                                                artist: asset.artist
-                                            )
+                                    LazyVGrid(columns: columns, spacing: 16) {
+                                        ForEach(audiobookSeries) { series in
+                                            NavigationLink(destination: SeriesDetailView(series: series)) {
+                                                VStack(alignment: .leading, spacing: 8) {
+                                                    ZStack(alignment: .bottomTrailing) {
+                                                        Group {
+                                                            if let urlStr = series.artworkUrl, let url = URL(string: urlStr) {
+                                                                CachedAsyncImage(url: url) {
+                                                                    Color.white.opacity(0.08)
+                                                                        .overlay(
+                                                                            Image(systemName: "book.fill")
+                                                                                .font(.system(size: 30))
+                                                                                .foregroundColor(.secondary)
+                                                                        )
+                                                                }
+                                                            } else {
+                                                                Color.white.opacity(0.08)
+                                                                    .overlay(
+                                                                        Image(systemName: "book.fill")
+                                                                            .font(.system(size: 30))
+                                                                            .foregroundColor(.secondary)
+                                                                    )
+                                                            }
+                                                        }
+                                                        .aspectRatio(3.0/2.0, contentMode: .fit)
+                                                        .clipped()
+                                                        .cornerRadius(10)
+
+                                                        Image(systemName: "book.fill")
+                                                            .font(.caption.bold())
+                                                            .foregroundColor(.white)
+                                                            .padding(6)
+                                                            .background(Circle().fill(Color.purple.opacity(0.8)))
+                                                            .padding(8)
+                                                    }
+
+                                                    VStack(alignment: .leading, spacing: 2) {
+                                                        Text(series.title)
+                                                            .font(.caption.bold())
+                                                            .foregroundColor(.white)
+                                                            .lineLimit(2)
+                                                        if !series.description.isEmpty {
+                                                            Text(series.description)
+                                                                .font(.caption)
+                                                                .foregroundColor(.secondary)
+                                                                .lineLimit(1)
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            .buttonStyle(.plain)
                                         }
                                     }
+                                    .padding(.horizontal, 16)
                                 }
-                                .padding(.horizontal, 16)
+                            }
+
+                            // ── SINGLES SECTION ──
+                            if !singleAssets.isEmpty {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Text("Audio")
+                                        .font(.title2.bold())
+                                        .foregroundColor(.white)
+                                        .padding(.horizontal, 16)
+                                        .padding(.top, 16)
+
+                                    LazyVGrid(columns: columns, spacing: 16) {
+                                        ForEach(singleAssets) { asset in
+                                            AudioAssetCard(asset: asset) {
+                                                audioPlayer.play(
+                                                    url: asset.audioUrl,
+                                                    title: asset.title,
+                                                    artist: asset.artist,
+                                                    coverUrl: asset.coverImageUrl
+                                                )
+                                            }
+                                        }
+                                    }
+                                    .padding(.horizontal, 16)
+                                }
                             }
                         }
                         // Spacer for mini player
@@ -93,19 +159,28 @@ struct AudioListView: View {
                 }
             }
         }
+        .overlay {
+            if isLoading {
+                ProgressView("Loading…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black.opacity(0.3))
+            }
+        }
         .task { await load() }
     }
 
     private func load() async {
-        if let cached = ContentPreloader.shared.audioAssets {
-            allAudioAssets = cached
-            isLoading = false
-            return
-        }
         isLoading = true
         error = nil
         do {
-            allAudioAssets = try await contentAPI.fetchAudio()
+            if let cached = ContentPreloader.shared.audioAssets {
+                allAudioAssets = cached
+            } else {
+                allAudioAssets = try await contentAPI.fetchAudio()
+            }
+            // Fetch series categorized as "audiobook"
+            let allSeries = try await contentAPI.fetchSeries()
+            audiobookSeries = allSeries.filter { $0.category.lowercased() == "audiobook" }
         } catch {
             self.error = error.localizedDescription
         }
@@ -146,7 +221,7 @@ struct AudioAssetCard: View {
                                 )
                         }
                     }
-                    .aspectRatio(1, contentMode: .fill)
+                    .aspectRatio(3.0/2.0, contentMode: .fit)
                     .clipped()
                     .cornerRadius(10)
 
@@ -182,8 +257,63 @@ struct AudioMiniPlayer: View {
     @ObservedObject private var audioPlayer = AudioPlayerManager.shared
     @State private var isScrubbing = false
     @State private var scrubValue: Double = 0
+    #if os(tvOS)
+    @State private var showFullPlayer = false
+    #endif
 
     var body: some View {
+        #if os(tvOS)
+        tvOSBody
+        #else
+        iOSBody
+        #endif
+    }
+
+    #if os(tvOS)
+    private var tvOSBody: some View {
+        Button {
+            showFullPlayer = true
+        } label: {
+            HStack(spacing: 16) {
+                Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
+                    .font(.title3)
+                    .foregroundColor(.white)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(audioPlayer.currentTitle)
+                        .font(.subheadline.bold())
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                    if !audioPlayer.currentArtist.isEmpty {
+                        Text(audioPlayer.currentArtist)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer()
+                ProgressView(value: audioPlayer.progress)
+                    .tint(.blue)
+                    .frame(width: 200)
+                Button { audioPlayer.stop() } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+        }
+        .background(Color.black.opacity(0.9))
+        .fullScreenCover(isPresented: $showFullPlayer) {
+            TVAudioPlayerView()
+        }
+        .onChange(of: audioPlayer.currentTitle) { _ in
+            if audioPlayer.hasItem { showFullPlayer = true }
+        }
+    }
+    #endif
+
+    private var iOSBody: some View {
         VStack(spacing: 0) {
             Divider().background(Color.white.opacity(0.15))
 
@@ -285,5 +415,9 @@ struct AudioMiniPlayer: View {
         }
         .background(Color.black.opacity(0.9))
     }
+
+    #if os(tvOS)
+    // Auto-present full player when a new track starts on tvOS
+    #endif
 }
 

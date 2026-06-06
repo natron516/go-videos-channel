@@ -8,10 +8,11 @@ struct GOPodcast: Identifiable, Codable {
     var artworkUrl: String?
     var category: String
     var enabled: Bool
+    var featured: Bool
     var sortOrder: Int
 
     enum CodingKeys: String, CodingKey {
-        case id, title, feedUrl, description, artworkUrl, category, enabled, sortOrder
+        case id, title, feedUrl, description, artworkUrl, category, enabled, featured, sortOrder
     }
 
     init(from decoder: Decoder) throws {
@@ -23,6 +24,7 @@ struct GOPodcast: Identifiable, Codable {
         artworkUrl = try container.decodeIfPresent(String.self, forKey: .artworkUrl)
         category = try container.decodeIfPresent(String.self, forKey: .category) ?? "general"
         enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
+        featured = try container.decodeIfPresent(Bool.self, forKey: .featured) ?? false
         sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
     }
 
@@ -35,6 +37,7 @@ struct GOPodcast: Identifiable, Codable {
         try container.encodeIfPresent(artworkUrl, forKey: .artworkUrl)
         try container.encode(category, forKey: .category)
         try container.encode(enabled, forKey: .enabled)
+        try container.encode(featured, forKey: .featured)
         try container.encode(sortOrder, forKey: .sortOrder)
     }
 }
@@ -61,10 +64,11 @@ struct GOSeries: Identifiable, Codable {
     var category: String
     var mediaType: String  // "audio", "video", or "mixed"
     var enabled: Bool
+    var featured: Bool
     var sortOrder: Int
 
     enum CodingKeys: String, CodingKey {
-        case id, title, description, artworkUrl, category, mediaType, enabled, sortOrder
+        case id, title, description, artworkUrl, category, mediaType, enabled, featured, sortOrder
     }
 
     init(from decoder: Decoder) throws {
@@ -76,6 +80,7 @@ struct GOSeries: Identifiable, Codable {
         category = try container.decodeIfPresent(String.self, forKey: .category) ?? "general"
         mediaType = try container.decodeIfPresent(String.self, forKey: .mediaType) ?? "audio"
         enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
+        featured = try container.decodeIfPresent(Bool.self, forKey: .featured) ?? false
         sortOrder = try container.decodeIfPresent(Int.self, forKey: .sortOrder) ?? 0
     }
 
@@ -88,6 +93,7 @@ struct GOSeries: Identifiable, Codable {
         try container.encode(category, forKey: .category)
         try container.encode(mediaType, forKey: .mediaType)
         try container.encode(enabled, forKey: .enabled)
+        try container.encode(featured, forKey: .featured)
         try container.encode(sortOrder, forKey: .sortOrder)
     }
 }

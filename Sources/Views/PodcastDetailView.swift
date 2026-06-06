@@ -150,7 +150,8 @@ struct PodcastDetailView: View {
         audioPlayer.play(
             url: episode.audioUrl,
             title: episode.title,
-            artist: podcast.title
+            artist: podcast.title,
+            coverUrl: episode.imageUrl ?? podcast.artworkUrl
         )
         if savedPos > 0 {
             audioPlayer.seek(to: savedPos / max(audioPlayer.duration, 1))

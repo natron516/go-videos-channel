@@ -5,6 +5,7 @@ struct HomeView: View {
     @ObservedObject private var autoplay = AutoplayManager.shared
     @ObservedObject private var featured = FeaturedManager.shared
     @ObservedObject private var liveManager = LiveStreamManager.shared
+    @ObservedObject private var contentAPI = ContentAPI.shared
     @State private var recentAssets: [MuxAsset] = []
     @State private var allAssets: [MuxAsset] = []
     @State private var liveStream: MuxLiveStream?
@@ -16,6 +17,14 @@ struct HomeView: View {
     @State private var showWatchTimer = false
     @State private var showSearch = false
     @State private var showLivePinLock = false
+    @State private var currentVideoIndex = 0
+
+    // Featured content from Firestore
+    @State private var featuredAudio: [GOAudioAsset] = []
+    @State private var featuredSeries: [GOSeries] = []
+    @State private var featuredPodcasts: [GOPodcast] = []
+    @State private var featuredBooks: [GOBook] = []
+    @State private var featuredArticles: [GOArticle] = []
 
     /// Assets to display — featured order when a curation list is set, otherwise recent.
     private var displayAssets: [MuxAsset] {
@@ -33,7 +42,32 @@ struct HomeView: View {
         featured.featuredIds.isEmpty ? "play.rectangle.fill" : "star.fill"
     }
 
+    /// Combined featured audio items for the circle scroller
+    private var allFeaturedAudio: [FeaturedAudioItem] {
+        var items: [FeaturedAudioItem] = []
+        for s in featuredSeries {
+            items.append(FeaturedAudioItem(id: "series-\(s.id)", title: s.title, imageUrl: s.artworkUrl, kind: .series(s)))
+        }
+        for p in featuredPodcasts {
+            items.append(FeaturedAudioItem(id: "podcast-\(p.id)", title: p.title, imageUrl: p.artworkUrl, kind: .podcast(p)))
+        }
+        for a in featuredAudio {
+            items.append(FeaturedAudioItem(id: "audio-\(a.id)", title: a.title, imageUrl: a.coverImageUrl, kind: .audio(a)))
+        }
+        return items
+    }
 
+    /// Combined featured read items for the square grid
+    private var allFeaturedRead: [FeaturedReadItem] {
+        var items: [FeaturedReadItem] = []
+        for b in featuredBooks {
+            items.append(FeaturedReadItem(id: "book-\(b.id)", title: b.title, subtitle: b.author, imageUrl: b.coverImageUrl, kind: .book(b)))
+        }
+        for a in featuredArticles {
+            items.append(FeaturedReadItem(id: "article-\(a.id)", title: a.title, subtitle: a.author, imageUrl: a.coverImageUrl, kind: .article(a)))
+        }
+        return items
+    }
 
     private var tvOSSpacing: Bool {
         #if os(tvOS)
@@ -43,8 +77,7 @@ struct HomeView: View {
         #endif
     }
 
-    // Home screen uses larger cards than the library views:
-    // iPhone → 1 column (full-width), iPad → 3, tvOS → 3
+    // Home screen video cards — single column stacked, 25% smaller via padding
     var columns: [GridItem] {
         #if os(tvOS)
         return Array(repeating: GridItem(.flexible(), spacing: 48), count: 3)
@@ -63,83 +96,139 @@ struct HomeView: View {
 
                 // Logo header
                 #if os(tvOS)
-                if let uiImage = UIImage(named: "NavLogo") {
-                    HStack {
-                        Image(uiImage: uiImage)
-                            .resizable()
-                            .interpolation(.high)
-                            .scaledToFit()
-                            .frame(height: 120)
-                        Spacer()
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, -150)
+                HStack {
+                    Image("CrossLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: 100)
+                    Spacer()
                 }
+                .padding(.horizontal, 20)
+                // padding placeholder removed
                 #else
                 // Logo lives in the nav bar on iOS — nothing here
                 #endif
 
 
-                #if os(tvOS)
-                Label(sectionTitle, systemImage: sectionIcon)
-                    .font(.title2.bold())
-                    .labelStyle(.titleAndIcon)
-                    .padding(.horizontal, 20)
-                #else
-                Label(sectionTitle, systemImage: sectionIcon)
-                    .font(.title3.bold())
-                    .labelStyle(.titleAndIcon)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 6)
-                #endif
-
                 if isLoading {
                     VStack(spacing: 20) {
                         ProgressView()
                             .scaleEffect(1.5)
-                        Text("Loading videos…")
+                        Text("Loading…")
                             .font(.callout)
                             .foregroundColor(.secondary)
                     }
                     .frame(maxWidth: .infinity, minHeight: 300)
                 } else {
-                    LazyVGrid(columns: columns, spacing: tvOSSpacing ? 48 : 12) {
-                        // Note: iPhone gets extra horizontal padding below to shrink cards ~25%
-                        ForEach(displayAssets) { asset in
-                            Button {
-                                if let url = asset.streamURL {
-                                    AutoplayManager.shared.setContext(asset: asset, playlist: displayAssets)
-                                    presentPlayer(url: url)
+
+                    // ── 🎬 WATCH SECTION (Videos at top) ──
+                    if !displayAssets.isEmpty {
+                        ZStack(alignment: .bottom) {
+                            TabView(selection: $currentVideoIndex) {
+                                ForEach(Array(displayAssets.enumerated()), id: \.element.id) { index, asset in
+                                    Button {
+                                        if let url = asset.streamURL {
+                                            AutoplayManager.shared.setContext(asset: asset, playlist: displayAssets)
+                                            presentPlayer(url: url)
+                                        }
+                                    } label: {
+                                        VStack(spacing: 6) {
+                                            CachedAsyncImage(url: asset.thumbnailURL, fallbackURL: asset.fallbackThumbnailURL) {
+                                                Rectangle()
+                                                    .fill(Color.gray.opacity(0.3))
+                                                    .overlay(Image(systemName: "play.circle").font(.largeTitle).foregroundColor(.white))
+                                            }
+                                            .aspectRatio(16.0/9.0, contentMode: .fill)
+                                            .frame(maxWidth: .infinity)
+                                            .clipped()
+                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                            .overlay(alignment: .bottom) {
+                                                LinearGradient(
+                                                    colors: [Color.clear, Color(red: 0.075, green: 0.075, blue: 0.075)],
+                                                    startPoint: .top,
+                                                    endPoint: .bottom
+                                                )
+                                                .frame(height: UIScreen.main.bounds.width * 9.0/16.0 * 0.35)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                            }
+
+                                            Text(asset.title)
+                                                .font(.subheadline.bold())
+                                                .foregroundColor(.white)
+                                                .lineLimit(2)
+                                                .multilineTextAlignment(.center)
+                                                .frame(maxWidth: .infinity)
+                                        }
+                                    }
+                                    .mediaCardStyle()
+                                    .contextMenu {
+                                        Button {
+                                            addToPlaylistAssetId = asset.id
+                                            showAddToPlaylist = true
+                                        } label: {
+                                            Label("Add to Playlist", systemImage: "plus.circle")
+                                        }
+                                        #if !os(tvOS)
+                                        if let url = asset.shareURL ?? asset.streamURL {
+                                            ShareLink(
+                                                item: url,
+                                                subject: Text(asset.title),
+                                                message: Text("Watch \(asset.title) on GO Videos")
+                                            ) {
+                                                Label("Share", systemImage: "square.and.arrow.up")
+                                            }
+                                        }
+                                        #endif
+                                    }
+                                    .tag(index)
                                 }
-                            } label: {
-                                SermonCardView(asset: asset, featured: true)
                             }
-                            .mediaCardStyle()
-                            .contextMenu {
-                                Button {
-                                    addToPlaylistAssetId = asset.id
-                                    showAddToPlaylist = true
-                                } label: {
-                                    Label("Add to Playlist", systemImage: "plus.circle")
-                                }
-                                #if !os(tvOS)
-                                if let url = asset.shareURL ?? asset.streamURL {
-                                    ShareLink(
-                                        item: url,
-                                        subject: Text(asset.title),
-                                        message: Text("Watch \(asset.title) on GO Videos")
-                                    ) {
-                                        Label("Share", systemImage: "square.and.arrow.up")
+                            .tabViewStyle(.page(indexDisplayMode: .never))
+                            .frame(height: UIScreen.main.bounds.width * 9.0/16.0 + 40)
+
+                            // Page indicator bars overlaid on thumbnail
+                            if displayAssets.count > 1 {
+                                HStack(spacing: 4) {
+                                    ForEach(0..<displayAssets.count, id: \.self) { i in
+                                        RoundedRectangle(cornerRadius: 2)
+                                            .fill(i == currentVideoIndex ? Color.white : Color.white.opacity(0.3))
+                                            .frame(width: 40, height: 3)
                                     }
                                 }
-                                #endif
+                                .padding(.bottom, 30)
                             }
                         }
                     }
-                    .padding(tvOSSpacing ? 20 : 16)
-                    #if !os(tvOS)
-                    .padding(.horizontal, UIDevice.current.userInterfaceIdiom == .pad ? 20 : 16)
-                    #endif
+
+                    // ── 🎧 LISTEN SECTION (Audio — circular thumbnails, horizontal scroll) ──
+                    if !allFeaturedAudio.isEmpty {
+                        VStack(alignment: .leading, spacing: 12) {
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: tvOSSpacing ? 28 : 16) {
+                                    ForEach(allFeaturedAudio) { item in
+                                        featuredAudioCircle(item: item)
+                                    }
+                                }
+                                .padding(.horizontal, tvOSSpacing ? 20 : 16)
+                            }
+                        }
+                        .padding(.top, 24)
+                    }
+
+                    // ── 📖 READ SECTION (Books/Articles — square thumbnails) ──
+                    if !allFeaturedRead.isEmpty {
+                        HStack(spacing: 14) {
+                            Spacer(minLength: 0)
+                            ForEach(allFeaturedRead) { item in
+                                featuredReadSquare(item: item)
+                                    .frame(width: 96)
+                            }
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.top, 24)
+                    }
                 }
             }
             .padding(.vertical, 20)
@@ -176,6 +265,152 @@ struct HomeView: View {
         }
         #endif
     }
+
+    // MARK: - Featured Audio Circle
+
+    @ViewBuilder
+    func featuredAudioCircle(item: FeaturedAudioItem) -> some View {
+        let circleSize: CGFloat = {
+            #if os(tvOS)
+            return 200
+            #else
+            return UIDevice.current.userInterfaceIdiom == .pad ? 160 : 130
+            #endif
+        }()
+
+        Group {
+            switch item.kind {
+            case .series(let series):
+                NavigationLink(destination: SeriesDetailView(series: series)) {
+                    audioCircleContent(title: item.title, imageUrl: item.imageUrl, size: circleSize, icon: "music.note.list")
+                }
+            case .podcast(let podcast):
+                NavigationLink(destination: PodcastDetailView(podcast: podcast)) {
+                    audioCircleContent(title: item.title, imageUrl: item.imageUrl, size: circleSize, icon: "mic.fill")
+                }
+            case .audio(let audio):
+                Button {
+                    AudioPlayerManager.shared.play(url: audio.audioUrl, title: audio.title, artist: audio.artist, coverUrl: audio.coverImageUrl)
+                } label: {
+                    audioCircleContent(title: item.title, imageUrl: item.imageUrl, size: circleSize, icon: "waveform")
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    func audioCircleContent(title: String, imageUrl: String?, size: CGFloat, icon: String) -> some View {
+        VStack(spacing: 8) {
+            ZStack {
+                if let urlStr = imageUrl, let url = URL(string: urlStr) {
+                    CachedAsyncImage(url: url) {
+                        Circle()
+                            .fill(Color.white.opacity(0.08))
+                            .overlay(
+                                Image(systemName: icon)
+                                    .font(.system(size: size * 0.25))
+                                    .foregroundColor(.secondary)
+                            )
+                    }
+                    .frame(width: size, height: size)
+                    .clipShape(Circle())
+                } else {
+                    Circle()
+                        .fill(Color.white.opacity(0.08))
+                        .frame(width: size, height: size)
+                        .overlay(
+                            Image(systemName: icon)
+                                .font(.system(size: size * 0.25))
+                                .foregroundColor(.secondary)
+                        )
+                }
+            }
+            .overlay(
+                Circle()
+                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
+            )
+
+            Text(title)
+                .font(.caption.bold())
+                .foregroundColor(.white)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .frame(width: size)
+
+            // Subtle headphone badge under the circle
+            Text("♫")
+                .font(.system(size: 10))
+                .foregroundColor(.white.opacity(0.4))
+        }
+    }
+
+    // MARK: - Featured Read Square
+
+    @ViewBuilder
+    func featuredReadSquare(item: FeaturedReadItem) -> some View {
+        Group {
+            switch item.kind {
+            case .book(let book):
+                #if os(tvOS)
+                readSquareContent(title: item.title, subtitle: item.subtitle, imageUrl: item.imageUrl, icon: "book.fill")
+                #else
+                NavigationLink(destination: BookDetailView(book: book)) {
+                    readSquareContent(title: item.title, subtitle: item.subtitle, imageUrl: item.imageUrl, icon: "book.fill")
+                }
+                #endif
+            case .article(let article):
+                #if os(tvOS)
+                readSquareContent(title: item.title, subtitle: item.subtitle, imageUrl: item.imageUrl, icon: "doc.text.fill")
+                #else
+                NavigationLink(destination: ArticleDetailView(article: article)) {
+                    readSquareContent(title: item.title, subtitle: item.subtitle, imageUrl: item.imageUrl, icon: "doc.text.fill")
+                }
+                #endif
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    func readSquareContent(title: String, subtitle: String, imageUrl: String?, icon: String) -> some View {
+        VStack(spacing: 0) {
+            ZStack(alignment: .topTrailing) {
+                if let urlStr = imageUrl, let url = URL(string: urlStr) {
+                    Color.clear
+                        .aspectRatio(2.0/3.0, contentMode: .fit)
+                        .overlay(
+                            CachedAsyncImage(url: url) {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.white.opacity(0.08))
+                                    .overlay(
+                                        Image(systemName: icon)
+                                            .font(.system(size: 30))
+                                            .foregroundColor(.secondary)
+                                    )
+                            }
+                            .scaledToFill()
+                        )
+                        .clipped()
+                        .cornerRadius(10)
+                } else {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.white.opacity(0.08))
+                        .aspectRatio(2.0/3.0, contentMode: .fit)
+                        .overlay(
+                            Image(systemName: icon)
+                                .font(.system(size: 30))
+                                .foregroundColor(.secondary)
+                        )
+                }
+
+                // Page corner fold (dogear)
+                PageCornerFold()
+                }
+            }
+        }
+
+    // MARK: - Live Now
 
     @ViewBuilder
     func liveNowBanner(stream: MuxLiveStream) -> some View {
@@ -219,21 +454,127 @@ struct HomeView: View {
 
     func load() async {
         if recentAssets.isEmpty { isLoading = true }
+
+        // Load video assets + live stream
         async let assets = api.fetchAssets()
         async let live = api.activeLiveStream()
+
         // Only fetch featured if not already loaded by preloader
         if !FeaturedManager.shared.isLoaded {
             async let _ = FeaturedManager.shared.fetch()
         }
+
+        // Load featured content from other content types
+        let pre = ContentPreloader.shared
+        async let audioResult: [GOAudioAsset] = {
+            if let cached = pre.audioAssets { return cached }
+            return (try? await contentAPI.fetchAudio()) ?? []
+        }()
+        async let seriesResult: [GOSeries] = {
+            if let cached = pre.series { return cached }
+            return (try? await contentAPI.fetchSeries()) ?? []
+        }()
+        async let podcastsResult: [GOPodcast] = {
+            if let cached = pre.podcasts { return cached }
+            return (try? await contentAPI.fetchPodcasts()) ?? []
+        }()
+        async let booksResult: [GOBook] = {
+            if let cached = pre.books { return cached }
+            return (try? await contentAPI.fetchBooks()) ?? []
+        }()
+        async let articlesResult: [GOArticle] = {
+            if let cached = pre.articles { return cached }
+            return (try? await contentAPI.fetchArticles()) ?? []
+        }()
+
         let fetched = (try? await assets) ?? []
         allAssets = fetched
         recentAssets = fetched.filter { $0.category != "sermon" && $0.category != "hidden" }
         liveStream = try? await live
         LiveStreamManager.shared.update(stream: liveStream, allAssets: fetched)
         NewContentTracker.shared.update(assets: fetched)
+
+        // Filter featured content
+        let allAudio = await audioResult
+        let allSeries = await seriesResult
+        let allPodcasts = await podcastsResult
+        let allBooks = await booksResult
+        let allArticles = await articlesResult
+
+        featuredAudio = allAudio.filter { $0.featured }
+        featuredSeries = allSeries.filter { $0.featured }
+        featuredPodcasts = allPodcasts.filter { $0.featured }
+        featuredBooks = allBooks.filter { $0.featured }
+        featuredArticles = allArticles.filter { $0.featured }
+
         prefetchThumbnails(displayAssets.map(\.thumbnailURL))
         isLoading = false
     }
 }
 
+// MARK: - Featured Audio Item
 
+struct FeaturedAudioItem: Identifiable {
+    let id: String
+    let title: String
+    let imageUrl: String?
+    let kind: Kind
+
+    enum Kind {
+        case series(GOSeries)
+        case podcast(GOPodcast)
+        case audio(GOAudioAsset)
+    }
+}
+
+// MARK: - Featured Read Item
+
+struct FeaturedReadItem: Identifiable {
+    let id: String
+    let title: String
+    let subtitle: String
+    let imageUrl: String?
+    let kind: Kind
+
+    enum Kind {
+        case book(GOBook)
+        case article(GOArticle)
+    }
+}
+
+// MARK: - Page Corner Fold (dogear effect)
+
+struct PageCornerFold: View {
+    var size: CGFloat = 22
+
+    var body: some View {
+        Canvas { context, canvasSize in
+            // Clip triangle in top-right corner
+            let foldPath = Path { p in
+                p.move(to: CGPoint(x: canvasSize.width - size, y: 0))
+                p.addLine(to: CGPoint(x: canvasSize.width, y: 0))
+                p.addLine(to: CGPoint(x: canvasSize.width, y: size))
+                p.closeSubpath()
+            }
+            // Dark triangle to "cut" the corner
+            context.fill(foldPath, with: .color(Color(red: 0.075, green: 0.075, blue: 0.075)))
+
+            // Fold triangle (the turned page)
+            let fold = Path { p in
+                p.move(to: CGPoint(x: canvasSize.width - size, y: 0))
+                p.addLine(to: CGPoint(x: canvasSize.width, y: size))
+                p.addLine(to: CGPoint(x: canvasSize.width - size, y: size))
+                p.closeSubpath()
+            }
+            context.fill(fold, with: .color(Color.white.opacity(0.25)))
+
+            // Subtle shadow line along fold
+            let shadow = Path { p in
+                p.move(to: CGPoint(x: canvasSize.width - size, y: 0))
+                p.addLine(to: CGPoint(x: canvasSize.width, y: size))
+            }
+            context.stroke(shadow, with: .color(Color.black.opacity(0.3)), lineWidth: 1)
+        }
+        .allowsHitTesting(false)
+    }
+}

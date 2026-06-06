@@ -92,7 +92,7 @@ struct PlaylistsView: View {
                 }
             }
         }
-        .navigationTitle("Library")
+        .navigationTitle("")
         #if !os(tvOS)
         .navigationDestination(for: UUID.self) { id in
             PlaylistDetailView(playlistId: id)

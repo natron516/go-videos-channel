@@ -1,6 +1,7 @@
 import Foundation
 import FirebaseAuth
 import FirebaseFirestore
+import CryptoKit
 
 /// Tracks per-user playback state in Firestore:
 /// - Which episodes/tracks have been played (for blue dot indicator)
@@ -43,6 +44,12 @@ class PlaybackTracker: ObservableObject {
         return db.collection("users").document(uid).collection("playback")
     }
 
+    /// Hash track ID to create a safe Firestore document ID
+    private func safeId(_ trackId: String) -> String {
+        let hash = SHA256.hash(data: Data(trackId.utf8))
+        return hash.prefix(16).map { String(format: "%02x", $0) }.joined()
+    }
+
     // MARK: - Listen for real-time updates
 
     func startListening() {
@@ -72,14 +79,15 @@ class PlaybackTracker: ObservableObject {
 
     /// Check if a track has been played by the current user
     func hasPlayed(_ trackId: String) -> Bool {
-        playedTracks.contains(trackId)
+        playedTracks.contains(safeId(trackId))
     }
 
     /// Mark a track as played
     func markPlayed(_ trackId: String) {
+        let id = safeId(trackId)
         guard let ref = collectionRef() else { return }
-        playedTracks.insert(trackId)
-        ref.document(trackId).setData([
+        playedTracks.insert(id)
+        ref.document(id).setData([
             "played": true,
             "updatedAt": FieldValue.serverTimestamp()
         ], merge: true)
@@ -87,9 +95,10 @@ class PlaybackTracker: ObservableObject {
 
     /// Save playback position for resume
     func savePosition(_ trackId: String, seconds: Double) {
+        let id = safeId(trackId)
         guard let ref = collectionRef() else { return }
-        positions[trackId] = seconds
-        ref.document(trackId).setData([
+        positions[id] = seconds
+        ref.document(id).setData([
             "played": true,
             "position": seconds,
             "updatedAt": FieldValue.serverTimestamp()
@@ -98,14 +107,15 @@ class PlaybackTracker: ObservableObject {
 
     /// Get saved position for a track (0 if none)
     func getPosition(_ trackId: String) -> Double {
-        positions[trackId] ?? 0
+        positions[safeId(trackId)] ?? 0
     }
 
     /// Clear position when playback completes naturally
     func clearPosition(_ trackId: String) {
+        let id = safeId(trackId)
         guard let ref = collectionRef() else { return }
-        positions.removeValue(forKey: trackId)
-        ref.document(trackId).setData([
+        positions.removeValue(forKey: id)
+        ref.document(id).setData([
             "played": true,
             "position": 0,
             "updatedAt": FieldValue.serverTimestamp()

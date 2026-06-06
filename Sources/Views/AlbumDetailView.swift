@@ -6,6 +6,8 @@ struct AlbumDetailView: View {
     @StateObject private var music = AppleMusicService.shared
     @State private var tracks: [Track] = []
     @State private var isLoading = true
+    @State private var addedToLibrary = false
+    @State private var addingToLibrary = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -189,44 +191,75 @@ struct AlbumDetailView: View {
     // MARK: - Play Controls
 
     var playControls: some View {
-        HStack(spacing: 16) {
-            Button {
-                Task { await music.playAlbum(album) }
-            } label: {
-                HStack {
-                    Image(systemName: "play.fill")
-                    Text("Play")
+        VStack(spacing: 12) {
+            HStack(spacing: 16) {
+                Button {
+                    Task { await music.playAlbum(album) }
+                } label: {
+                    HStack {
+                        Image(systemName: "play.fill")
+                        Text("Play")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing)
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .font(.headline)
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(
-                    LinearGradient(colors: [.pink, .purple], startPoint: .leading, endPoint: .trailing)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                Button {
+                    Task {
+                        await music.playAlbum(album)
+                        ApplicationMusicPlayer.shared.state.shuffleMode = .songs
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: "shuffle")
+                        Text("Shuffle")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.white.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
             }
 
+            // Add to Apple Music Library
             Button {
                 Task {
-                    // Shuffle play
-                    await music.playAlbum(album)
-                    // MusicKit doesn't have a direct shuffle for queue,
-                    // but we can set the shuffle mode
-                    ApplicationMusicPlayer.shared.state.shuffleMode = .songs
+                    addingToLibrary = true
+                    do {
+                        try await MusicLibrary.shared.add(album)
+                        addedToLibrary = true
+                    } catch {
+                        print("Failed to add to library: \(error)")
+                    }
+                    addingToLibrary = false
                 }
             } label: {
                 HStack {
-                    Image(systemName: "shuffle")
-                    Text("Shuffle")
+                    if addingToLibrary {
+                        ProgressView()
+                            .tint(.white)
+                            .scaleEffect(0.8)
+                    } else {
+                        Image(systemName: addedToLibrary ? "checkmark" : "plus")
+                    }
+                    Text(addedToLibrary ? "Added to Library" : "Add to My Library")
                 }
-                .font(.headline)
-                .foregroundColor(.white)
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(addedToLibrary ? .green : .white)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
-                .background(Color.white.opacity(0.1))
+                .padding(.vertical, 10)
+                .background(Color.white.opacity(addedToLibrary ? 0.05 : 0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
+            .disabled(addedToLibrary || addingToLibrary)
         }
         .padding(.horizontal, 16)
     }

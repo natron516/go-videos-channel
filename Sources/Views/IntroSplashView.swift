@@ -1,12 +1,10 @@
 import SwiftUI
-import AVKit
 
 struct IntroSplashView: View {
     private static var hasPlayedSplash = false
 
     @State private var showContent = IntroSplashView.hasPlayedSplash
-    @State private var videoOpacity: Double = 0.0  // starts invisible, fades in
-    @State private var player: AVPlayer?
+    @State private var splashOpacity: Double = 1.0
     @ObservedObject private var watchTimer = WatchTimerManager.shared
 
     @EnvironmentObject var api: MuxAPI
@@ -24,23 +22,34 @@ struct IntroSplashView: View {
                     .zIndex(10)
             }
 
-            // Video splash on top
-            if !showContent || videoOpacity > 0 {
+            // Static logo splash on top
+            if !IntroSplashView.hasPlayedSplash || splashOpacity > 0 {
                 ZStack {
-                    Color.black.ignoresSafeArea()
-                    if let player = player {
-                        IntroPlayerView(player: player)
-                            .aspectRatio(1, contentMode: .fit)
-                            .ignoresSafeArea()
-                    }
+                    // Dark gradient background
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.08, green: 0.08, blue: 0.10),
+                            Color(red: 0.15, green: 0.15, blue: 0.18),
+                            Color(red: 0.08, green: 0.08, blue: 0.10)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .ignoresSafeArea()
+
+                    // Cross logo centered
+                    Image("CrossLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 180, height: 180)
                 }
-                .opacity(videoOpacity)
+                .opacity(splashOpacity)
                 .ignoresSafeArea()
                 .allowsHitTesting(false)
             }
         }
         .onAppear {
-            setupPlayer()
+            setupSplash()
             // Prefetch ALL thumbnails during splash so every category loads instantly
             Task {
                 let all = (try? await api.fetchAllAssets()) ?? []
@@ -54,94 +63,21 @@ struct IntroSplashView: View {
         }
     }
 
-    private func setupPlayer() {
-        // Only play splash once per app launch
+    private func setupSplash() {
         guard !IntroSplashView.hasPlayedSplash else {
             showContent = true
-            videoOpacity = 0
+            splashOpacity = 0
             return
         }
 
-        guard let url = Bundle.main.url(forResource: "intro_splash", withExtension: "mp4") else {
-            showContent = true
-            videoOpacity = 0
-            IntroSplashView.hasPlayedSplash = true
-            return
-        }
+        IntroSplashView.hasPlayedSplash = true
 
-        let avPlayer = AVPlayer(url: url)
-        avPlayer.isMuted = true
-        self.player = avPlayer
-
-        let dismissSplash = {
-            IntroSplashView.hasPlayedSplash = true
-            // Dissolve splash out, content in simultaneously
-            withAnimation(.easeInOut(duration: 0.8)) {
+        // Show logo for ~1.5 seconds, then dissolve into content
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+            withAnimation(.easeInOut(duration: 0.6)) {
                 showContent = true
-                videoOpacity = 0
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                self.player = nil
+                splashOpacity = 0
             }
         }
-
-        // Fade video in on start
-        let asset = AVAsset(url: url)
-        Task {
-            if let duration = try? await asset.load(.duration), duration.isNumeric {
-                let halfTime = CMTimeMultiplyByFloat64(duration, multiplier: 0.5)
-                await avPlayer.seek(to: .zero)
-                avPlayer.play()
-                // Fade in
-                withAnimation(.easeIn(duration: 0.4)) {
-                    videoOpacity = 1.0
-                }
-                // Dissolve out at halfway point
-                DispatchQueue.main.asyncAfter(deadline: .now() + halfTime.seconds) {
-                    dismissSplash()
-                }
-            } else {
-                // Fallback: listen for video end
-                avPlayer.play()
-                withAnimation(.easeIn(duration: 0.4)) { videoOpacity = 1.0 }
-                NotificationCenter.default.addObserver(
-                    forName: .AVPlayerItemDidPlayToEndTime,
-                    object: avPlayer.currentItem,
-                    queue: .main
-                ) { _ in dismissSplash() }
-            }
-        }
-    }
-}
-
-// Simple AVPlayer wrapper without controls
-struct IntroPlayerView: UIViewRepresentable {
-    let player: AVPlayer
-
-    func makeUIView(context: Context) -> UIView {
-        let view = PlayerUIView(player: player)
-        return view
-    }
-
-    func updateUIView(_ uiView: UIView, context: Context) {}
-}
-
-class PlayerUIView: UIView {
-    private var playerLayer: AVPlayerLayer
-
-    init(player: AVPlayer) {
-        playerLayer = AVPlayerLayer(player: player)
-        super.init(frame: .zero)
-        playerLayer.videoGravity = .resizeAspectFill
-        layer.addSublayer(playerLayer)
-    }
-
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        playerLayer.frame = bounds
     }
 }

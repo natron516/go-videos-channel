@@ -3,16 +3,16 @@ import SwiftUI
 #if !os(tvOS)
 
 struct BookListView: View {
+    var searchText: String = ""
     @ObservedObject private var contentAPI = ContentAPI.shared
     @State private var allBooks: [GOBook] = []
     @State private var isLoading = true
     @State private var error: String?
-    @State private var selectedCategory = "all"
+    @State private var selectedCategories: Set<String> = []
     @State private var showAddToPlaylist = false
     @State private var addToPlaylistBookId: String?
 
     private let categories: [(value: String, label: String)] = [
-        ("all", "All"),
         ("books-for-boys", "Books for Boys"),
         ("books-for-girls", "Books for Girls"),
         ("theology", "Theology"),
@@ -20,24 +20,25 @@ struct BookListView: View {
     ]
 
     private var filteredBooks: [GOBook] {
-        if selectedCategory == "all" { return allBooks }
-        return allBooks.filter { $0.category == selectedCategory }
+        var books = selectedCategories.isEmpty ? allBooks : allBooks.filter { selectedCategories.contains($0.category) }
+        if !searchText.isEmpty {
+            let q = searchText.lowercased()
+            books = books.filter { $0.title.lowercased().contains(q) || $0.author.lowercased().contains(q) }
+        }
+        return books
     }
 
     var columns: [GridItem] {
-        UIDevice.current.userInterfaceIdiom == .pad
-            ? Array(repeating: GridItem(.flexible(), spacing: 20), count: 4)
-            : Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
+        if UIDevice.current.userInterfaceIdiom == .pad {
+            return Array(repeating: GridItem(.flexible(), spacing: 14), count: 6)
+        }
+        return Array(repeating: GridItem(.flexible(), spacing: 10), count: 3)
     }
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
-            Color.clear.appBackground()
-
-            if isLoading {
-                ProgressView("Loading Books…")
-            } else if let err = error {
+            Color.clear
+            if let err = error {
                 VStack(spacing: 16) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.system(size: 50))
@@ -52,7 +53,7 @@ struct BookListView: View {
                         .buttonStyle(.borderedProminent)
                 }
                 .padding(40)
-            } else if allBooks.isEmpty {
+            } else if !isLoading && allBooks.isEmpty {
                 VStack(spacing: 16) {
                     Image(systemName: "book.fill")
                         .font(.system(size: 50))
@@ -64,13 +65,17 @@ struct BookListView: View {
             } else {
                 ScrollView {
                     VStack(spacing: 16) {
-                        // Category pill bar
+                        // Category pill bar (multiselect — empty = All)
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
                                 ForEach(categories, id: \.value) { cat in
                                     Button {
                                         withAnimation(.easeInOut(duration: 0.2)) {
-                                            selectedCategory = cat.value
+                                            if selectedCategories.contains(cat.value) {
+                                                selectedCategories.remove(cat.value)
+                                            } else {
+                                                selectedCategories.insert(cat.value)
+                                            }
                                         }
                                     } label: {
                                         Text(cat.label)
@@ -79,13 +84,13 @@ struct BookListView: View {
                                             .padding(.vertical, 7)
                                             .background(
                                                 Capsule().fill(
-                                                    selectedCategory == cat.value
+                                                    selectedCategories.contains(cat.value)
                                                         ? Color.blue
                                                         : Color.white.opacity(0.1)
                                                 )
                                             )
                                             .foregroundColor(
-                                                selectedCategory == cat.value ? .white : .secondary
+                                                selectedCategories.contains(cat.value) ? .white : .secondary
                                             )
                                     }
                                 }
@@ -127,6 +132,13 @@ struct BookListView: View {
                     }
                     .padding(.vertical, 8)
                 }
+            }
+        }
+        .overlay {
+            if isLoading {
+                ProgressView("Loading…")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black.opacity(0.3))
             }
         }
         .task { await load() }

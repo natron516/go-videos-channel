@@ -198,16 +198,10 @@ struct GONavBarModifier: ViewModifier {
             .toolbarBackground(.hidden, for: .navigationBar)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    if let uiImage = UIImage(named: "NavLogo") {
-                        Link(destination: URL(string: "https://go-admin-production-6be4.up.railway.app/")!) {
-                            Image(uiImage: uiImage)
-                                .resizable()
-                                .interpolation(.high)
-                                .scaledToFit()
-                                .frame(height: UIDevice.current.userInterfaceIdiom == .pad ? 48 : 38)
-                        }
-                        .buttonStyle(.plain)
-                    }
+                    Image("CrossLogo")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(height: UIDevice.current.userInterfaceIdiom == .pad ? 36 : 28)
                 }
                 ToolbarItemGroup(placement: .navigationBarTrailing) {
                     Button { autoplay.enabled.toggle() } label: {
