@@ -6,7 +6,6 @@ import AVFoundation
 /// playback speed selector, and a progress bar with elapsed/remaining time.
 struct TVAudioPlayerView: View {
     @ObservedObject private var audioPlayer = AudioPlayerManager.shared
-    @Environment(\.dismiss) var dismiss
     @State private var playbackSpeed: Float = 1.0
     @FocusState private var focusedControl: AudioControl?
     @State private var isScrubbing = false
@@ -58,11 +57,11 @@ struct TVAudioPlayerView: View {
 
                 Spacer()
 
-                // Close button
+                // Stop button
                 Button {
-                    dismiss()
+                    audioPlayer.stop()
                 } label: {
-                    Text("Done")
+                    Text("Stop")
                         .font(.callout.bold())
                         .foregroundColor(.white.opacity(0.7))
                         .padding(.horizontal, 32)
@@ -74,13 +73,9 @@ struct TVAudioPlayerView: View {
                 .padding(.bottom, 40)
             }
         }
-        .ignoresSafeArea()
         .onAppear {
             focusedControl = .playPause
             playbackSpeed = audioPlayer.playbackRate
-        }
-        .onChange(of: audioPlayer.hasItem) { hasItem in
-            if !hasItem { dismiss() }
         }
     }
 
@@ -297,6 +292,7 @@ struct TVScrubberBar: View {
         }
         .frame(height: isFocused ? 28 : 6)
         .animation(.easeInOut(duration: 0.2), value: isFocused)
+        #if os(tvOS)
         // Scrub on press-and-hold of left/right on Siri Remote
         .onMoveCommand { direction in
             guard isFocused else { return }
@@ -314,8 +310,8 @@ struct TVScrubberBar: View {
             }
         }
         .onPlayPauseCommand {
-            // Clicking the scrubber toggles play/pause
             AudioPlayerManager.shared.togglePlayPause()
         }
+        #endif
     }
 }

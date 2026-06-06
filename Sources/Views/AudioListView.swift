@@ -257,9 +257,7 @@ struct AudioMiniPlayer: View {
     @ObservedObject private var audioPlayer = AudioPlayerManager.shared
     @State private var isScrubbing = false
     @State private var scrubValue: Double = 0
-    #if os(tvOS)
-    @State private var showFullPlayer = false
-    #endif
+
 
     var body: some View {
         #if os(tvOS)
@@ -270,46 +268,10 @@ struct AudioMiniPlayer: View {
     }
 
     #if os(tvOS)
+    // On tvOS, the full audio player is embedded in TVContentView's main area.
+    // The mini player is not needed since the full player takes over the content area.
     private var tvOSBody: some View {
-        Button {
-            showFullPlayer = true
-        } label: {
-            HStack(spacing: 16) {
-                Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
-                    .font(.title3)
-                    .foregroundColor(.white)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(audioPlayer.currentTitle)
-                        .font(.subheadline.bold())
-                        .foregroundColor(.white)
-                        .lineLimit(1)
-                    if !audioPlayer.currentArtist.isEmpty {
-                        Text(audioPlayer.currentArtist)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                Spacer()
-                ProgressView(value: audioPlayer.progress)
-                    .tint(.blue)
-                    .frame(width: 200)
-                Button { audioPlayer.stop() } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.title3)
-                        .foregroundColor(.secondary)
-                }
-            }
-            .padding(.horizontal, 24)
-            .padding(.vertical, 12)
-        }
-        .background(Color.black.opacity(0.9))
-        .fullScreenCover(isPresented: $showFullPlayer) {
-            TVAudioPlayerView()
-        }
-        .onChange(of: audioPlayer.currentTitle) { _ in
-            if audioPlayer.hasItem { showFullPlayer = true }
-        }
+        EmptyView()
     }
     #endif
 

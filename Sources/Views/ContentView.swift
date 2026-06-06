@@ -452,6 +452,7 @@ struct TVContentView: View {
     @State private var navPath = NavigationPath()
     @State private var sermonUnlocked = PinUnlockManager.shared.isUnlocked
     @ObservedObject private var liveManager = LiveStreamManager.shared
+    @ObservedObject private var audioPlayer = AudioPlayerManager.shared
 
     var body: some View {
         ZStack {
@@ -470,12 +471,21 @@ struct TVContentView: View {
                     .fill(Color.white.opacity(0.08))
                     .frame(width: 1)
 
-                NavigationStack(path: $navPath) {
-                    detailView
-                        .id(selection)
+                ZStack {
+                    NavigationStack(path: $navPath) {
+                        detailView
+                            .id(selection)
+                    }
+                    .focusSection()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .opacity(audioPlayer.hasItem ? 0 : 1)
+
+                    if audioPlayer.hasItem {
+                        TVAudioPlayerView()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .transition(.opacity)
+                    }
                 }
-                .focusSection()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .task {
