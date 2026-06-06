@@ -9,11 +9,13 @@ struct TVAudioPlayerView: View {
     @Environment(\.dismiss) var dismiss
     @State private var playbackSpeed: Float = 1.0
     @FocusState private var focusedControl: AudioControl?
+    @State private var isScrubbing = false
+    @State private var scrubValue: Double = 0
 
     private let speeds: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
 
     enum AudioControl: Hashable {
-        case skipBack, playPause, skipForward, speed, close
+        case scrubber, skipBack, playPause, skipForward, speed, close
     }
 
     var body: some View {
@@ -141,40 +143,43 @@ struct TVAudioPlayerView: View {
             )
     }
 
-    // MARK: - Progress
+    // MARK: - Progress (scrubbable with Siri Remote)
 
     private var progressSection: some View {
-        VStack(spacing: 8) {
-            // Progress bar
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.white.opacity(0.2))
-                        .frame(height: 6)
-                    Capsule()
-                        .fill(Color.blue)
-                        .frame(width: geo.size.width * CGFloat(audioPlayer.progress), height: 6)
+        let displayProgress = isScrubbing ? scrubValue : audioPlayer.progress
+        let currentTime = isScrubbing
+            ? audioPlayer.formattedTime(scrubValue * audioPlayer.duration)
+            : audioPlayer.currentTimeFormatted
+        let remaining = max(audioPlayer.duration - (displayProgress * audioPlayer.duration), 0)
+
+        return VStack(spacing: 8) {
+            // Custom focusable scrubber bar
+            TVScrubberBar(
+                progress: displayProgress,
+                isFocused: focusedControl == .scrubber,
+                onScrub: { newVal in
+                    scrubValue = newVal
+                    isScrubbing = true
+                },
+                onCommit: {
+                    audioPlayer.seek(to: scrubValue)
+                    isScrubbing = false
                 }
-            }
-            .frame(height: 6)
+            )
+            .focused($focusedControl, equals: .scrubber)
 
             // Times
             HStack {
-                Text(audioPlayer.currentTimeFormatted)
+                Text(currentTime)
                     .font(.caption.monospacedDigit())
                     .foregroundColor(.white.opacity(0.6))
                 Spacer()
-                Text("-" + remainingTime)
+                Text("-" + audioPlayer.formattedTime(remaining))
                     .font(.caption.monospacedDigit())
                     .foregroundColor(.white.opacity(0.6))
             }
         }
         .padding(.horizontal, 120)
-    }
-
-    private var remainingTime: String {
-        let remaining = max(audioPlayer.duration - (audioPlayer.duration * audioPlayer.progress), 0)
-        return audioPlayer.formattedTime(remaining)
     }
 
     // MARK: - Transport Controls
@@ -250,5 +255,67 @@ struct TVAudioPlayerView: View {
         if speed == 1.0 { return "1×" }
         if speed == floor(speed) { return "\(Int(speed))×" }
         return String(format: "%.1f×", speed)
+    }
+}
+
+// MARK: - tvOS Scrubber Bar
+/// A focusable progress bar for tvOS. When focused, the bar expands and shows
+/// a knob. Swiping left/right on the Siri Remote scrubs in 10-second increments.
+struct TVScrubberBar: View {
+    let progress: Double
+    let isFocused: Bool
+    let onScrub: (Double) -> Void
+    let onCommit: () -> Void
+
+    var body: some View {
+        GeometryReader { geo in
+            let height: CGFloat = isFocused ? 14 : 6
+            let knobSize: CGFloat = isFocused ? 28 : 0
+            let fillWidth = geo.size.width * CGFloat(progress)
+
+            ZStack(alignment: .leading) {
+                // Track
+                Capsule()
+                    .fill(Color.white.opacity(isFocused ? 0.3 : 0.2))
+                    .frame(height: height)
+
+                // Fill
+                Capsule()
+                    .fill(Color.blue)
+                    .frame(width: max(fillWidth, 0), height: height)
+
+                // Knob (visible when focused)
+                if isFocused {
+                    Circle()
+                        .fill(Color.white)
+                        .frame(width: knobSize, height: knobSize)
+                        .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+                        .offset(x: max(min(fillWidth - knobSize / 2, geo.size.width - knobSize), 0))
+                }
+            }
+            .frame(height: max(height, knobSize))
+        }
+        .frame(height: isFocused ? 28 : 6)
+        .animation(.easeInOut(duration: 0.2), value: isFocused)
+        // Scrub on press-and-hold of left/right on Siri Remote
+        .onMoveCommand { direction in
+            guard isFocused else { return }
+            let step: Double = 0.02 // ~2% per tick
+            switch direction {
+            case .left:
+                let newVal = max(progress - step, 0)
+                onScrub(newVal)
+                onCommit()
+            case .right:
+                let newVal = min(progress + step, 1)
+                onScrub(newVal)
+                onCommit()
+            default: break
+            }
+        }
+        .onPlayPauseCommand {
+            // Clicking the scrubber toggles play/pause
+            AudioPlayerManager.shared.togglePlayPause()
+        }
     }
 }
