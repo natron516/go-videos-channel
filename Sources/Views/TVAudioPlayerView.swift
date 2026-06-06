@@ -26,9 +26,10 @@ struct TVAudioPlayerView: View {
             // Background
             backgroundLayer
 
-            // All controls in a single VStack for proper focus ordering
-            VStack(spacing: 24) {
-                // Back button row (top)
+            // All controls in a single VStack — no Spacers between focusable items
+            // so the focus engine can navigate up/down through them all
+            VStack(spacing: 20) {
+                // Back button row (top) — safe area friendly
                 HStack {
                     Button {
                         onCollapse()
@@ -44,24 +45,21 @@ struct TVAudioPlayerView: View {
                     Spacer()
                 }
                 .padding(.horizontal, 40)
-                .padding(.top, 20)
 
-                Spacer()
-
-                // Cover art
+                // Cover art (smaller to fit everything)
                 coverArt
 
                 // Title / Artist
-                VStack(spacing: 8) {
+                VStack(spacing: 6) {
                     Text(audioPlayer.currentTitle)
-                        .font(.title2.bold())
+                        .font(.title3.bold())
                         .foregroundColor(.white)
                         .lineLimit(2)
                         .multilineTextAlignment(.center)
 
                     if !audioPlayer.currentArtist.isEmpty {
                         Text(audioPlayer.currentArtist)
-                            .font(.title3)
+                            .font(.headline)
                             .foregroundColor(.white.opacity(0.7))
                             .lineLimit(1)
                     }
@@ -82,9 +80,8 @@ struct TVAudioPlayerView: View {
                     speedOptions
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
-
-                Spacer()
             }
+            .padding(.vertical, 50)
         }
         #if os(tvOS)
         .focusSection()
@@ -131,9 +128,9 @@ struct TVAudioPlayerView: View {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 360, height: 360)
-                        .cornerRadius(20)
-                        .shadow(color: .black.opacity(0.5), radius: 30, y: 15)
+                        .frame(width: 280, height: 280)
+                        .cornerRadius(16)
+                        .shadow(color: .black.opacity(0.5), radius: 20, y: 10)
                 } else {
                     placeholderArt
                 }
@@ -146,10 +143,10 @@ struct TVAudioPlayerView: View {
     private var placeholderArt: some View {
         RoundedRectangle(cornerRadius: 20)
             .fill(Color.white.opacity(0.08))
-            .frame(width: 360, height: 360)
+            .frame(width: 280, height: 280)
             .overlay(
                 Image(systemName: "music.note")
-                    .font(.system(size: 80))
+                    .font(.system(size: 60))
                     .foregroundColor(.white.opacity(0.3))
             )
     }
