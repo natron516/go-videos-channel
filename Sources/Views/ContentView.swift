@@ -453,6 +453,7 @@ struct TVContentView: View {
     @State private var sermonUnlocked = PinUnlockManager.shared.isUnlocked
     @ObservedObject private var liveManager = LiveStreamManager.shared
     @ObservedObject private var audioPlayer = AudioPlayerManager.shared
+    @State private var showFullAudioPlayer = false
 
     var body: some View {
         ZStack {
@@ -472,18 +473,33 @@ struct TVContentView: View {
                     .frame(width: 1)
 
                 ZStack {
-                    NavigationStack(path: $navPath) {
-                        detailView
-                            .id(selection)
-                    }
-                    .focusSection()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .opacity(audioPlayer.hasItem ? 0 : 1)
+                    VStack(spacing: 0) {
+                        NavigationStack(path: $navPath) {
+                            detailView
+                                .id(selection)
+                        }
+                        .focusSection()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-                    if audioPlayer.hasItem {
-                        TVAudioPlayerView()
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .transition(.opacity)
+                        // Mini player at bottom when audio playing but full player collapsed
+                        if audioPlayer.hasItem && !showFullAudioPlayer {
+                            TVAudioMiniPlayer(onExpand: {
+                                withAnimation(.easeInOut(duration: 0.3)) {
+                                    showFullAudioPlayer = true
+                                }
+                            })
+                        }
+                    }
+
+                    // Full audio player overlay
+                    if audioPlayer.hasItem && showFullAudioPlayer {
+                        TVAudioPlayerView(onCollapse: {
+                            withAnimation(.easeInOut(duration: 0.3)) {
+                                showFullAudioPlayer = false
+                            }
+                        })
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .transition(.opacity)
                     }
                 }
             }
@@ -514,6 +530,17 @@ struct TVContentView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: AppNavigator.navigateToSermonsNotification)) { _ in
             selection = .sermons
+        }
+        .onChange(of: audioPlayer.currentTitle) { _ in
+            // Auto-expand full player when a new track starts
+            if audioPlayer.hasItem {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    showFullAudioPlayer = true
+                }
+            }
+        }
+        .onChange(of: audioPlayer.hasItem) { hasItem in
+            if !hasItem { showFullAudioPlayer = false }
         }
     }
 

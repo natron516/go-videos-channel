@@ -1,29 +1,48 @@
 import SwiftUI
 import AVFoundation
 
-/// Full-screen audio player for tvOS.
+// MARK: - Full-screen audio player for tvOS
 /// Shows cover art, track title/artist, transport controls (skip ±15s, play/pause),
-/// playback speed selector, and a progress bar with elapsed/remaining time.
+/// collapsible playback speed, and a scrubbable progress bar.
+/// Has a back button that collapses to a mini player.
 struct TVAudioPlayerView: View {
     @ObservedObject private var audioPlayer = AudioPlayerManager.shared
+    var onCollapse: () -> Void = {}
+
     @State private var playbackSpeed: Float = 1.0
     @FocusState private var focusedControl: AudioControl?
     @State private var isScrubbing = false
     @State private var scrubValue: Double = 0
+    @State private var showSpeedOptions = false
 
     private let speeds: [Float] = [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
 
     enum AudioControl: Hashable {
-        case scrubber, skipBack, playPause, skipForward, speed, close
+        case back, scrubber, skipBack, playPause, skipForward, speedToggle, speedOption(Float)
     }
 
     var body: some View {
-        ZStack {
-            // Background — blurred cover art or dark gradient
+        ZStack(alignment: .topLeading) {
+            // Background
             backgroundLayer
 
+            // Back button (top-left)
+            Button {
+                onCollapse()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(.white)
+                    .frame(width: 50, height: 50)
+                    .background(Color.white.opacity(0.15))
+                    .clipShape(Circle())
+            }
+            .focused($focusedControl, equals: .back)
+            .padding(.top, 40)
+            .padding(.leading, 40)
+
             // Content
-            VStack(spacing: 40) {
+            VStack(spacing: 32) {
                 Spacer()
 
                 // Cover art
@@ -52,25 +71,16 @@ struct TVAudioPlayerView: View {
                 // Transport controls
                 transportControls
 
-                // Speed selector
-                speedSelector
+                // Playback Speed button (collapsed by default)
+                speedButton
+
+                // Speed options (expanded)
+                if showSpeedOptions {
+                    speedOptions
+                        .transition(.opacity.combined(with: .move(edge: .top)))
+                }
 
                 Spacer()
-
-                // Stop button
-                Button {
-                    audioPlayer.stop()
-                } label: {
-                    Text("Stop")
-                        .font(.callout.bold())
-                        .foregroundColor(.white.opacity(0.7))
-                        .padding(.horizontal, 32)
-                        .padding(.vertical, 10)
-                        .background(Color.white.opacity(0.15))
-                        .clipShape(Capsule())
-                }
-                .focused($focusedControl, equals: .close)
-                .padding(.bottom, 40)
             }
         }
         .onAppear {
@@ -115,7 +125,7 @@ struct TVAudioPlayerView: View {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                        .frame(width: 400, height: 400)
+                        .frame(width: 360, height: 360)
                         .cornerRadius(20)
                         .shadow(color: .black.opacity(0.5), radius: 30, y: 15)
                 } else {
@@ -130,7 +140,7 @@ struct TVAudioPlayerView: View {
     private var placeholderArt: some View {
         RoundedRectangle(cornerRadius: 20)
             .fill(Color.white.opacity(0.08))
-            .frame(width: 400, height: 400)
+            .frame(width: 360, height: 360)
             .overlay(
                 Image(systemName: "music.note")
                     .font(.system(size: 80))
@@ -138,7 +148,7 @@ struct TVAudioPlayerView: View {
             )
     }
 
-    // MARK: - Progress (scrubbable with Siri Remote)
+    // MARK: - Progress (scrubbable)
 
     private var progressSection: some View {
         let displayProgress = isScrubbing ? scrubValue : audioPlayer.progress
@@ -148,7 +158,6 @@ struct TVAudioPlayerView: View {
         let remaining = max(audioPlayer.duration - (displayProgress * audioPlayer.duration), 0)
 
         return VStack(spacing: 8) {
-            // Custom focusable scrubber bar
             TVScrubberBar(
                 progress: displayProgress,
                 isFocused: focusedControl == .scrubber,
@@ -163,7 +172,6 @@ struct TVAudioPlayerView: View {
             )
             .focused($focusedControl, equals: .scrubber)
 
-            // Times
             HStack {
                 Text(currentTime)
                     .font(.caption.monospacedDigit())
@@ -181,10 +189,7 @@ struct TVAudioPlayerView: View {
 
     private var transportControls: some View {
         HStack(spacing: 60) {
-            // Skip back 15s
-            Button {
-                audioPlayer.skip(seconds: -15)
-            } label: {
+            Button { audioPlayer.skip(seconds: -15) } label: {
                 Image(systemName: "gobackward.15")
                     .font(.system(size: 44))
                     .foregroundColor(.white)
@@ -192,10 +197,7 @@ struct TVAudioPlayerView: View {
             }
             .focused($focusedControl, equals: .skipBack)
 
-            // Play / Pause
-            Button {
-                audioPlayer.togglePlayPause()
-            } label: {
+            Button { audioPlayer.togglePlayPause() } label: {
                 Image(systemName: audioPlayer.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                     .font(.system(size: 76))
                     .foregroundColor(.white)
@@ -203,10 +205,7 @@ struct TVAudioPlayerView: View {
             }
             .focused($focusedControl, equals: .playPause)
 
-            // Skip forward 15s
-            Button {
-                audioPlayer.skip(seconds: 15)
-            } label: {
+            Button { audioPlayer.skip(seconds: 15) } label: {
                 Image(systemName: "goforward.15")
                     .font(.system(size: 44))
                     .foregroundColor(.white)
@@ -216,18 +215,42 @@ struct TVAudioPlayerView: View {
         }
     }
 
-    // MARK: - Speed Selector
+    // MARK: - Speed Toggle Button
 
-    private var speedSelector: some View {
-        HStack(spacing: 16) {
-            Text("Speed")
-                .font(.callout)
-                .foregroundColor(.white.opacity(0.6))
+    private var speedButton: some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                showSpeedOptions.toggle()
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Image(systemName: "gauge.with.needle")
+                    .font(.callout)
+                Text("Playback Speed: \(speedLabel(playbackSpeed))")
+                    .font(.callout.bold())
+                Image(systemName: showSpeedOptions ? "chevron.up" : "chevron.down")
+                    .font(.caption)
+            }
+            .foregroundColor(.white.opacity(0.7))
+            .padding(.horizontal, 24)
+            .padding(.vertical, 10)
+            .background(Color.white.opacity(0.12))
+            .clipShape(Capsule())
+        }
+        .focused($focusedControl, equals: .speedToggle)
+    }
 
+    // MARK: - Speed Options (expanded)
+
+    private var speedOptions: some View {
+        HStack(spacing: 12) {
             ForEach(speeds, id: \.self) { speed in
                 Button {
                     playbackSpeed = speed
                     audioPlayer.setPlaybackRate(speed)
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        showSpeedOptions = false
+                    }
                 } label: {
                     Text(speedLabel(speed))
                         .font(.callout.bold())
@@ -241,7 +264,7 @@ struct TVAudioPlayerView: View {
                         )
                         .clipShape(Capsule())
                 }
-                .focused($focusedControl, equals: .speed)
+                .focused($focusedControl, equals: .speedOption(speed))
             }
         }
     }
@@ -253,9 +276,91 @@ struct TVAudioPlayerView: View {
     }
 }
 
+// MARK: - tvOS Mini Audio Player
+/// Compact bar shown at the bottom of the content area when audio is playing
+/// but the user has navigated away from the full player.
+struct TVAudioMiniPlayer: View {
+    @ObservedObject private var audioPlayer = AudioPlayerManager.shared
+    var onExpand: () -> Void = {}
+
+    var body: some View {
+        Button {
+            onExpand()
+        } label: {
+            HStack(spacing: 16) {
+                // Cover art thumbnail
+                if let urlStr = audioPlayer.currentCoverUrlPublic, let url = URL(string: urlStr) {
+                    AsyncImage(url: url) { phase in
+                        if let image = phase.image {
+                            image.resizable().aspectRatio(contentMode: .fill)
+                                .frame(width: 48, height: 48)
+                                .cornerRadius(8)
+                                .clipped()
+                        } else {
+                            miniPlaceholder
+                        }
+                    }
+                } else {
+                    miniPlaceholder
+                }
+
+                // Title + artist
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(audioPlayer.currentTitle)
+                        .font(.subheadline.bold())
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                    if !audioPlayer.currentArtist.isEmpty {
+                        Text(audioPlayer.currentArtist)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+
+                Spacer()
+
+                // Progress
+                ProgressView(value: audioPlayer.progress)
+                    .tint(.blue)
+                    .frame(width: 200)
+
+                // Play/Pause
+                Button {
+                    audioPlayer.togglePlayPause()
+                } label: {
+                    Image(systemName: audioPlayer.isPlaying ? "pause.fill" : "play.fill")
+                        .font(.title3)
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44)
+                }
+
+                // Stop
+                Button {
+                    audioPlayer.stop()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title3)
+                        .foregroundColor(.secondary)
+                        .frame(width: 44, height: 44)
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.vertical, 12)
+            .background(Color.black.opacity(0.92))
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var miniPlaceholder: some View {
+        RoundedRectangle(cornerRadius: 8)
+            .fill(Color.white.opacity(0.1))
+            .frame(width: 48, height: 48)
+            .overlay(Image(systemName: "music.note").foregroundColor(.secondary))
+    }
+}
+
 // MARK: - tvOS Scrubber Bar
-/// A focusable progress bar for tvOS. When focused, the bar expands and shows
-/// a knob. Swiping left/right on the Siri Remote scrubs in 10-second increments.
 struct TVScrubberBar: View {
     let progress: Double
     let isFocused: Bool
@@ -269,17 +374,13 @@ struct TVScrubberBar: View {
             let fillWidth = geo.size.width * CGFloat(progress)
 
             ZStack(alignment: .leading) {
-                // Track
                 Capsule()
                     .fill(Color.white.opacity(isFocused ? 0.3 : 0.2))
                     .frame(height: height)
-
-                // Fill
                 Capsule()
                     .fill(Color.blue)
                     .frame(width: max(fillWidth, 0), height: height)
 
-                // Knob (visible when focused)
                 if isFocused {
                     Circle()
                         .fill(Color.white)
@@ -293,18 +394,15 @@ struct TVScrubberBar: View {
         .frame(height: isFocused ? 28 : 6)
         .animation(.easeInOut(duration: 0.2), value: isFocused)
         #if os(tvOS)
-        // Scrub on press-and-hold of left/right on Siri Remote
         .onMoveCommand { direction in
             guard isFocused else { return }
-            let step: Double = 0.02 // ~2% per tick
+            let step: Double = 0.02
             switch direction {
             case .left:
-                let newVal = max(progress - step, 0)
-                onScrub(newVal)
+                onScrub(max(progress - step, 0))
                 onCommit()
             case .right:
-                let newVal = min(progress + step, 1)
-                onScrub(newVal)
+                onScrub(min(progress + step, 1))
                 onCommit()
             default: break
             }
