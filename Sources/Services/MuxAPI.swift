@@ -52,11 +52,22 @@ class MuxAPI: ObservableObject {
 
     @discardableResult
     private func refreshAssets() async throws -> [MuxAsset] {
-        let req = request(path: "/video/v1/assets?limit=100&order_direction=desc")
-        let (data, _) = try await URLSession.shared.data(for: req)
-        let response = try JSONDecoder().decode(MuxAssetsResponse.self, from: data)
+        var allAssets: [MuxAsset] = []
+        var cursor: String? = nil
+        // Paginate through all Mux assets
+        repeat {
+            var path = "/video/v1/assets?limit=100&order_direction=desc"
+            if let c = cursor {
+                path += "&cursor=\(c)"
+            }
+            let req = request(path: path)
+            let (data, _) = try await URLSession.shared.data(for: req)
+            let response = try JSONDecoder().decode(MuxAssetsResponse.self, from: data)
+            allAssets.append(contentsOf: response.data)
+            cursor = response.next_cursor
+        } while cursor != nil
         // Cache all ready assets including hidden; fetchAssets() strips hidden for regular users
-        let assets = response.data.filter { $0.status == "ready" || $0.status == "preparing" }
+        let assets = allAssets.filter { $0.status == "ready" || $0.status == "preparing" }
         await MainActor.run {
             cachedAssets = assets
             cachedAssetsDate = Date()

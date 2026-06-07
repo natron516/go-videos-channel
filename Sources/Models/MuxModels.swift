@@ -161,6 +161,17 @@ struct MuxPlaybackId: Decodable {
 
 struct MuxAssetsResponse: Decodable {
     let data: [MuxAsset]
+    let next_cursor: String?
+
+    enum CodingKeys: String, CodingKey {
+        case data, next_cursor
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        data = try container.decode([MuxAsset].self, forKey: .data)
+        next_cursor = try container.decodeIfPresent(String.self, forKey: .next_cursor)
+    }
 }
 
 extension MuxAsset {
