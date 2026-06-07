@@ -83,12 +83,14 @@ struct WatchView: View {
             } else {
                 VStack(spacing: 0) {
                     // Live stream banner — hidden/private videos never show
+                    // Use liveCategory (falls back to stream passthrough if asset category not set)
                     if liveManager.isLive, let liveAsset = liveManager.liveAsset,
-                       liveAsset.category != "hidden" {
+                       liveManager.liveCategory != "hidden" {
+                        let liveCat = liveManager.liveCategory
                         if selectedCategory.assetCategory == nil ||
-                           selectedCategory.assetCategory == liveAsset.category {
+                           selectedCategory.assetCategory == liveCat {
                             LiveStreamBanner(asset: liveAsset) {
-                                if liveAsset.category == "sermon" && !pinUnlocked {
+                                if (liveCat == "sermon" || liveManager.activeStream?.isSermon == true) && !pinUnlocked {
                                     pendingLivePlay = true
                                     showPinLock = true
                                 } else if let url = liveAsset.streamURL {
@@ -107,9 +109,7 @@ struct WatchView: View {
                                 WatchPillButton(
                                     label: cat.label,
                                     isSelected: selectedCategory == cat,
-                                    isLive: liveManager.isLive && liveManager.liveAsset.map { a in
-                                        a.category != "hidden" && (cat.assetCategory == nil || cat.assetCategory == a.category)
-                                    } ?? false
+                                    isLive: liveManager.isLive && liveManager.liveCategory != "hidden" && (cat.assetCategory == nil || cat.assetCategory == liveManager.liveCategory)
                                 ) {
                                     if cat.requiresPin && !pinUnlocked {
                                         selectedCategory = cat
