@@ -31,6 +31,7 @@ struct WatchView: View {
     @State private var selectedCategory: WatchCategory = WatchCategory.all[0]
     @State private var showPinLock = false
     @State private var pinUnlocked = false
+    @State private var pendingLivePlay = false
     @State private var addToPlaylistAssetId: String?
     @State private var showAddToPlaylist = false
     @State private var showLinkTV = false
@@ -70,6 +71,12 @@ struct WatchView: View {
                     PinUnlockManager.shared.unlock()
                     pinUnlocked = true
                     showPinLock = false
+                    // If PIN was triggered from live sermon banner, auto-play after unlock
+                    if pendingLivePlay, let liveAsset = liveManager.liveAsset,
+                       let url = liveAsset.streamURL {
+                        pendingLivePlay = false
+                        presentPlayer(url: url)
+                    }
                 }
                 .background(Color.black)
                 .ignoresSafeArea()
@@ -79,7 +86,14 @@ struct WatchView: View {
                     if liveManager.isLive, let liveAsset = liveManager.liveAsset {
                         if selectedCategory.assetCategory == nil ||
                            selectedCategory.assetCategory == liveAsset.category {
-                            LiveStreamBanner(asset: liveAsset)
+                            LiveStreamBanner(asset: liveAsset) {
+                                if liveAsset.category == "sermon" && !pinUnlocked {
+                                    pendingLivePlay = true
+                                    showPinLock = true
+                                } else if let url = liveAsset.streamURL {
+                                    presentPlayer(url: url)
+                                }
+                            }
                                 .padding(.horizontal, 16)
                                 .padding(.top, 8)
                         }
@@ -220,6 +234,7 @@ struct WatchPillButton: View {
 // MARK: - Live Stream Banner
 struct LiveStreamBanner: View {
     let asset: MuxAsset
+    var onWatch: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -239,9 +254,7 @@ struct LiveStreamBanner: View {
                 .lineLimit(1)
             Spacer()
             Button {
-                if let url = asset.streamURL {
-                    presentPlayer(url: url)
-                }
+                onWatch()
             } label: {
                 Text("Watch")
                     .font(.caption.bold())
