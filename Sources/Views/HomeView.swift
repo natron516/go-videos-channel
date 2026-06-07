@@ -126,41 +126,40 @@ struct HomeView: View {
                         ZStack(alignment: .bottom) {
                             TabView(selection: $currentVideoIndex) {
                                 ForEach(Array(displayAssets.enumerated()), id: \.element.id) { index, asset in
-                                    Button {
+                                    VStack(spacing: 6) {
+                                        CachedAsyncImage(url: asset.thumbnailURL, fallbackURL: asset.fallbackThumbnailURL) {
+                                            Rectangle()
+                                                .fill(Color.gray.opacity(0.3))
+                                                .overlay(Image(systemName: "play.circle").font(.largeTitle).foregroundColor(.white))
+                                        }
+                                        .aspectRatio(16.0/9.0, contentMode: .fill)
+                                        .frame(maxWidth: .infinity)
+                                        .clipped()
+                                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        .overlay(alignment: .bottom) {
+                                            LinearGradient(
+                                                colors: [Color.clear, Color(red: 0.075, green: 0.075, blue: 0.075)],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            )
+                                            .frame(height: UIScreen.main.bounds.width * 9.0/16.0 * 0.35)
+                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                        }
+
+                                        Text(asset.title)
+                                            .font(.subheadline.bold())
+                                            .foregroundColor(.white)
+                                            .lineLimit(2)
+                                            .multilineTextAlignment(.center)
+                                            .frame(maxWidth: .infinity)
+                                    }
+                                    .contentShape(Rectangle())
+                                    .onTapGesture {
                                         if let url = asset.streamURL {
                                             AutoplayManager.shared.setContext(asset: asset, playlist: displayAssets)
                                             presentPlayer(url: url)
                                         }
-                                    } label: {
-                                        VStack(spacing: 6) {
-                                            CachedAsyncImage(url: asset.thumbnailURL, fallbackURL: asset.fallbackThumbnailURL) {
-                                                Rectangle()
-                                                    .fill(Color.gray.opacity(0.3))
-                                                    .overlay(Image(systemName: "play.circle").font(.largeTitle).foregroundColor(.white))
-                                            }
-                                            .aspectRatio(16.0/9.0, contentMode: .fill)
-                                            .frame(maxWidth: .infinity)
-                                            .clipped()
-                                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                                            .overlay(alignment: .bottom) {
-                                                LinearGradient(
-                                                    colors: [Color.clear, Color(red: 0.075, green: 0.075, blue: 0.075)],
-                                                    startPoint: .top,
-                                                    endPoint: .bottom
-                                                )
-                                                .frame(height: UIScreen.main.bounds.width * 9.0/16.0 * 0.35)
-                                                .clipShape(RoundedRectangle(cornerRadius: 8))
-                                            }
-
-                                            Text(asset.title)
-                                                .font(.subheadline.bold())
-                                                .foregroundColor(.white)
-                                                .lineLimit(2)
-                                                .multilineTextAlignment(.center)
-                                                .frame(maxWidth: .infinity)
-                                        }
                                     }
-                                    .mediaCardStyle()
                                     .contextMenu {
                                         Button {
                                             addToPlaylistAssetId = asset.id
@@ -186,13 +185,13 @@ struct HomeView: View {
                             .tabViewStyle(.page(indexDisplayMode: .never))
                             .frame(height: UIScreen.main.bounds.width * 9.0/16.0 + 40)
 
-                            // Page indicator bars overlaid on thumbnail
+                            // Page indicator dots
                             if displayAssets.count > 1 {
-                                HStack(spacing: 4) {
+                                HStack(spacing: 6) {
                                     ForEach(0..<displayAssets.count, id: \.self) { i in
-                                        RoundedRectangle(cornerRadius: 2)
-                                            .fill(i == currentVideoIndex ? Color.white : Color.white.opacity(0.3))
-                                            .frame(width: 40, height: 3)
+                                        Circle()
+                                            .fill(i == currentVideoIndex ? Color.white : Color.white.opacity(0.35))
+                                            .frame(width: 8, height: 8)
                                     }
                                 }
                                 .padding(.bottom, 30)
