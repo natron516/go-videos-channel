@@ -48,8 +48,8 @@ class NewContentTracker: ObservableObject {
     }
 
     #if os(iOS)
-    /// Aggressively clear ALL UIKit tab bar badges and app icon badge.
-    /// Indicators are emoji-only in tab titles — nothing should set UIKit badges.
+    /// Aggressively clear ALL UIKit tab bar badges and app icon badge,
+    /// then re-apply the live red dot on the Watch tab if needed.
     func clearAllBadges() {
         // Clear app icon badge
         UIApplication.shared.applicationIconBadgeNumber = 0
@@ -72,6 +72,12 @@ class NewContentTracker: ObservableObject {
             guard let items = items, !items.isEmpty else { return false }
             for item in items {
                 item.badgeValue = nil
+            }
+            // Re-apply live dot on Watch tab (index 1) if live and not hidden
+            let lm = LiveStreamManager.shared
+            if lm.isLive && lm.liveCategory != "hidden", items.count > 1 {
+                items[1].badgeValue = ""
+                items[1].badgeColor = .systemRed
             }
             return true
         }

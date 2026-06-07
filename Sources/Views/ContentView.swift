@@ -94,8 +94,16 @@ struct iPadContentView: View {
                         }
                     } label: {
                         VStack(spacing: 4) {
-                            Image(systemName: tab.icon)
-                                .font(.system(size: 22))
+                            ZStack(alignment: .topTrailing) {
+                                Image(systemName: tab.icon)
+                                    .font(.system(size: 22))
+                                if tab.id == 1 && liveManager.isLive && liveManager.liveCategory != "hidden" {
+                                    Circle()
+                                        .fill(Color.red)
+                                        .frame(width: 8, height: 8)
+                                        .offset(x: 4, y: -2)
+                                }
+                            }
                             Text(tab.title)
                                 .font(.caption2)
                         }
