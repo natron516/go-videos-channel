@@ -52,9 +52,7 @@ struct iPadContentView: View {
     @State private var selectedTab: Int = 0
     @ObservedObject private var liveManager = LiveStreamManager.shared
 
-    private var watchTabTitle: String {
-        liveManager.isLive ? "🔴 Watch" : "Watch"
-    }
+    private var watchTabTitle: String { "Watch" }
 
     private struct TabItem: Identifiable {
         let id: Int
@@ -611,9 +609,7 @@ struct ContentView: View {
     }()
     @ObservedObject private var liveManager = LiveStreamManager.shared
 
-    private var watchTabTitle: String {
-        liveManager.isLive ? "🔴 Watch" : "Watch"
-    }
+    private var watchTabTitle: String { "Watch" }
 
     @ViewBuilder
     var mainTabs: some View {

@@ -82,8 +82,9 @@ struct WatchView: View {
                 .ignoresSafeArea()
             } else {
                 VStack(spacing: 0) {
-                    // Live stream banner
-                    if liveManager.isLive, let liveAsset = liveManager.liveAsset {
+                    // Live stream banner — hidden/private videos never show
+                    if liveManager.isLive, let liveAsset = liveManager.liveAsset,
+                       liveAsset.category != "hidden" {
                         if selectedCategory.assetCategory == nil ||
                            selectedCategory.assetCategory == liveAsset.category {
                             LiveStreamBanner(asset: liveAsset) {
@@ -105,7 +106,10 @@ struct WatchView: View {
                             ForEach(visibleCategories) { cat in
                                 WatchPillButton(
                                     label: cat.label,
-                                    isSelected: selectedCategory == cat
+                                    isSelected: selectedCategory == cat,
+                                    isLive: liveManager.isLive && liveManager.liveAsset.map { a in
+                                        a.category != "hidden" && (cat.assetCategory == nil || cat.assetCategory == a.category)
+                                    } ?? false
                                 ) {
                                     if cat.requiresPin && !pinUnlocked {
                                         selectedCategory = cat
@@ -214,19 +218,27 @@ struct WatchView: View {
 struct WatchPillButton: View {
     let label: String
     let isSelected: Bool
+    var isLive: Bool = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            Text(label)
-                .font(.subheadline.weight(isSelected ? .semibold : .regular))
-                .foregroundColor(isSelected ? .black : .white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 8)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? Color.white : Color.white.opacity(0.15))
-                )
+            HStack(spacing: 6) {
+                Text(label)
+                    .font(.subheadline.weight(isSelected ? .semibold : .regular))
+                    .foregroundColor(isSelected ? .black : .white)
+                if isLive {
+                    Circle()
+                        .fill(Color.red)
+                        .frame(width: 7, height: 7)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(isSelected ? Color.white : Color.white.opacity(0.15))
+            )
         }
     }
 }
