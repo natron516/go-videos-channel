@@ -273,7 +273,7 @@ struct HomeView: View {
             #if os(tvOS)
             return 200
             #else
-            return UIDevice.current.userInterfaceIdiom == .pad ? 160 : 130
+            return UIDevice.current.userInterfaceIdiom == .pad ? 184 : 150
             #endif
         }()
 
