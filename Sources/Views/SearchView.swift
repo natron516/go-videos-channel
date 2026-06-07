@@ -30,7 +30,7 @@ struct SearchView: View {
         #if os(tvOS)
         return Array(repeating: GridItem(.flexible(), spacing: 40), count: 4)
         #else
-        return [GridItem(.adaptive(minimum: 280))]
+        return [GridItem(.adaptive(minimum: 160))]
         #endif
     }
 
@@ -51,8 +51,8 @@ struct SearchView: View {
             .padding()
             .background(Color.gray.opacity(0.15))
             .cornerRadius(12)
-            .padding(.horizontal, 40)
-            .padding(.vertical, 20)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
 
             // Results
             ScrollView {
@@ -70,16 +70,16 @@ struct SearchView: View {
                         .font(.title2).foregroundColor(.secondary)
                         .padding(.top, 60)
                 } else {
-                    VStack(alignment: .leading, spacing: 24) {
+                    VStack(alignment: .leading, spacing: 14) {
                         // Music results
                         if !musicResults.isEmpty {
                             Text("Music")
-                                .font(.title3.bold())
+                                .font(.subheadline.bold())
                                 .foregroundColor(.white)
-                                .padding(.horizontal, 40)
+                                .padding(.horizontal, 16)
 
                             ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 16) {
+                                HStack(spacing: 12) {
                                     ForEach(musicResults) { album in
                                         NavigationLink(destination: AlbumDetailView(album: album)) {
                                             VStack(spacing: 8) {
@@ -111,18 +111,18 @@ struct SearchView: View {
                                         .buttonStyle(.plain)
                                     }
                                 }
-                                .padding(.horizontal, 40)
+                                .padding(.horizontal, 16)
                             }
                         }
 
                         // Video results
                         if !results.isEmpty {
                             Text("Videos")
-                                .font(.title3.bold())
+                                .font(.subheadline.bold())
                                 .foregroundColor(.white)
-                                .padding(.horizontal, 40)
+                                .padding(.horizontal, 16)
 
-                            LazyVGrid(columns: columns, spacing: 40) {
+                            LazyVGrid(columns: columns, spacing: 14) {
                                 ForEach(results) { asset in
                                     Button {
                                         if let url = asset.streamURL { presentPlayer(url: url) }
@@ -132,14 +132,17 @@ struct SearchView: View {
                                     .mediaCardStyle()
                                 }
                             }
-                            .padding(.horizontal, 40)
+                            .padding(.horizontal, 16)
                         }
                     }
-                    .padding(.top, 8)
+                    .padding(.top, 4)
                 }
             }
         }
         .navigationTitle("Search")
+        #if !os(tvOS)
+        .navigationBarTitleDisplayMode(.inline)
+        #endif
         .navigationBarBackButtonHidden(true)
         .task {
             allAssets = (try? await api.fetchAssets()) ?? []
