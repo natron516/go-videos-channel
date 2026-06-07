@@ -216,17 +216,17 @@ struct HomeView: View {
                         .padding(.top, 24)
                     }
 
-                    // ── 📖 READ SECTION (Books/Articles — square thumbnails) ──
+                    // ── 📖 READ SECTION (Books/Articles — square thumbnails, horizontal scroll) ──
                     if !allFeaturedRead.isEmpty {
-                        HStack(spacing: 14) {
-                            Spacer(minLength: 0)
-                            ForEach(allFeaturedRead) { item in
-                                featuredReadSquare(item: item)
-                                    .frame(width: 96)
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 14) {
+                                ForEach(allFeaturedRead) { item in
+                                    featuredReadSquare(item: item)
+                                        .frame(width: 96)
+                                }
                             }
-                            Spacer(minLength: 0)
+                            .padding(.horizontal, 16)
                         }
-                        .padding(.horizontal, 16)
                         .padding(.top, 24)
                     }
                 }
