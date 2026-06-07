@@ -5,6 +5,8 @@ struct IntroSplashView: View {
 
     @State private var showContent = IntroSplashView.hasPlayedSplash
     @State private var splashOpacity: Double = 1.0
+    @State private var dataReady = false
+    @State private var minTimeReached = false
     @ObservedObject private var watchTimer = WatchTimerManager.shared
 
     @EnvironmentObject var api: MuxAPI
@@ -50,16 +52,27 @@ struct IntroSplashView: View {
         }
         .onAppear {
             setupSplash()
-            // Prefetch ALL thumbnails during splash so every category loads instantly
+            // Prefetch ALL assets + thumbnails + tab content during splash
             Task {
-                let all = (try? await api.fetchAllAssets()) ?? []
-                prefetchThumbnails(all.map(\.thumbnailURL))
-                prefetchThumbnails(all.map(\.fallbackThumbnailURL))
+                async let assetsTask: Void = {
+                    let all = (try? await api.fetchAllAssets()) ?? []
+                    prefetchThumbnails(all.map(\.thumbnailURL))
+                    prefetchThumbnails(all.map(\.fallbackThumbnailURL))
+                }()
+                async let preloadTask: Void = ContentPreloader.shared.preloadAll()
+                _ = await (assetsTask, preloadTask)
+                dataReady = true
+                revealIfReady()
             }
-            // Preload all tab content (books, articles, podcasts, audio, series, music)
-            Task {
-                await ContentPreloader.shared.preloadAll()
-            }
+        }
+    }
+
+    private func revealIfReady() {
+        guard dataReady && minTimeReached else { return }
+        guard !showContent else { return }
+        withAnimation(.easeInOut(duration: 0.6)) {
+            showContent = true
+            splashOpacity = 0
         }
     }
 
@@ -67,16 +80,25 @@ struct IntroSplashView: View {
         guard !IntroSplashView.hasPlayedSplash else {
             showContent = true
             splashOpacity = 0
+            dataReady = true
+            minTimeReached = true
             return
         }
 
         IntroSplashView.hasPlayedSplash = true
 
-        // Show logo for ~1.5 seconds, then dissolve into content
+        // Minimum splash time of 1.5s, but wait for data before revealing
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation(.easeInOut(duration: 0.6)) {
-                showContent = true
-                splashOpacity = 0
+            minTimeReached = true
+            revealIfReady()
+        }
+        // Safety timeout — reveal after 6s even if data is still loading
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6.0) {
+            if !showContent {
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    showContent = true
+                    splashOpacity = 0
+                }
             }
         }
     }
