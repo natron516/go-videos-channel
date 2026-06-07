@@ -10,7 +10,7 @@ class MuxAPI: ObservableObject {
     private let baseURL = "https://api.mux.com"
 
     // MARK: - In-memory response cache
-    private var cachedAssets: [MuxAsset]?
+    private(set) var cachedAssets: [MuxAsset]?
     private var cachedAssetsDate: Date?
     private var cachedLiveStreams: [MuxLiveStream]?
     private var cachedLiveDate: Date?

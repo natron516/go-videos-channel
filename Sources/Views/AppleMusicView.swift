@@ -1204,6 +1204,13 @@ struct PlaylistMusicDetailView: View {
             } else {
                 ScrollView {
                     VStack(spacing: 0) {
+                        // Now Playing bar
+                        if music.isPlaying, let title = music.nowPlayingTitle {
+                            NowPlayingBar(title: title)
+                                .padding(.horizontal, 16)
+                                .padding(.top, 8)
+                        }
+
                         // Playlist header
                         VStack(spacing: 12) {
                             if let artwork = playlist.artwork {

@@ -175,12 +175,36 @@ struct FullWidthPurchaseButton: View {
 // MARK: - URL opener — opens web URL directly, lets iOS universal links handle app routing
 private func openURL(_ urlString: String) {
     guard let url = URL(string: urlString) else { return }
-    // Open as universal link — iOS will route to Amazon/Kindle/Audible app
-    // if installed, or Safari if not. This handles search URLs, product URLs,
-    // and all other formats correctly.
+
+    // Try Kindle app deep link for Amazon/Kindle URLs
+    if urlString.contains("amazon.com") || urlString.contains("kindle") {
+        // Extract ASIN from Amazon URL if possible (e.g. /dp/XXXXXXXXX)
+        if let asinRange = urlString.range(of: "/dp/"),
+           let asin = urlString[asinRange.upperBound...].split(separator: "/").first.map(String.init),
+           let kindleURL = URL(string: "kindle://book?action=open&asin=\(asin)") {
+            UIApplication.shared.open(kindleURL, options: [:]) { opened in
+                if !opened {
+                    // Kindle app not installed — fall back to web
+                    UIApplication.shared.open(url)
+                }
+            }
+            return
+        }
+    }
+
+    // Try Audible app for Audible URLs
+    if urlString.contains("audible.com") || urlString.contains("audible") {
+        UIApplication.shared.open(url, options: [.universalLinksOnly: true]) { opened in
+            if !opened {
+                UIApplication.shared.open(url)
+            }
+        }
+        return
+    }
+
+    // Default: universal link → Safari fallback
     UIApplication.shared.open(url, options: [.universalLinksOnly: true]) { opened in
         if !opened {
-            // Universal link not handled — open in Safari
             UIApplication.shared.open(url)
         }
     }

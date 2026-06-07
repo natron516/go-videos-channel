@@ -6,14 +6,33 @@ struct SearchView: View {
     @StateObject private var music = AppleMusicService.shared
     @State private var allAssets: [MuxAsset] = []
     @State private var query = ""
+    @State private var allBooks: [GOBook] = []
+    @State private var allArticles: [GOArticle] = []
 
     var results: [MuxAsset] {
         guard !query.isEmpty else { return [] }
         let q = query.lowercased()
         return allAssets.filter {
             $0.title.lowercased().contains(q) ||
-            ($0.speaker?.lowercased().contains(q) ?? false) ||
-            ($0.category?.lowercased().contains(q) ?? false)
+            ($0.speaker?.lowercased().contains(q) ?? false)
+        }
+    }
+
+    var bookResults: [GOBook] {
+        guard !query.isEmpty else { return [] }
+        let q = query.lowercased()
+        return allBooks.filter {
+            $0.title.lowercased().contains(q) ||
+            $0.author.lowercased().contains(q)
+        }
+    }
+
+    var articleResults: [GOArticle] {
+        guard !query.isEmpty else { return [] }
+        let q = query.lowercased()
+        return allArticles.filter {
+            $0.title.lowercased().contains(q) ||
+            $0.author.lowercased().contains(q)
         }
     }
 
@@ -39,7 +58,7 @@ struct SearchView: View {
             // Search field
             HStack {
                 Image(systemName: "magnifyingglass").foregroundColor(.secondary)
-                TextField("Search videos, music…", text: $query)
+                TextField("Search videos, books, music…", text: $query)
                     .font(.title3)
                 if !query.isEmpty {
                     Button { query = "" } label: {
@@ -65,7 +84,7 @@ struct SearchView: View {
                             .font(.title2).foregroundColor(.secondary)
                     }
                     .padding(.top, 60)
-                } else if results.isEmpty && musicResults.isEmpty {
+                } else if results.isEmpty && musicResults.isEmpty && bookResults.isEmpty && articleResults.isEmpty {
                     Text("No results for \"\(query)\"")
                         .font(.title2).foregroundColor(.secondary)
                         .padding(.top, 60)
@@ -115,6 +134,86 @@ struct SearchView: View {
                             }
                         }
 
+                        // Book results
+                        if !bookResults.isEmpty {
+                            Text("Books")
+                                .font(.subheadline.bold())
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(bookResults) { book in
+                                        NavigationLink(destination: BookDetailView(book: book)) {
+                                            VStack(spacing: 6) {
+                                                if let urlStr = book.coverImageUrl, let url = URL(string: urlStr) {
+                                                    CachedAsyncImage(url: url) {
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: 90, height: 130)
+                                                    }
+                                                    .frame(width: 90, height: 130)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                                } else {
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: 90, height: 130)
+                                                        .overlay(Image(systemName: "book.fill").foregroundColor(.white.opacity(0.4)))
+                                                }
+                                                Text(book.title)
+                                                    .font(.caption.bold())
+                                                    .foregroundColor(.white)
+                                                    .lineLimit(2)
+                                                    .frame(width: 90)
+                                            }
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                            }
+                        }
+
+                        // Article results
+                        if !articleResults.isEmpty {
+                            Text("Articles")
+                                .font(.subheadline.bold())
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 12) {
+                                    ForEach(articleResults) { article in
+                                        NavigationLink(destination: ArticleDetailView(article: article)) {
+                                            VStack(spacing: 6) {
+                                                if let urlStr = article.coverImageUrl, let url = URL(string: urlStr) {
+                                                    CachedAsyncImage(url: url) {
+                                                        RoundedRectangle(cornerRadius: 8)
+                                                            .fill(Color.gray.opacity(0.3))
+                                                            .frame(width: 90, height: 130)
+                                                    }
+                                                    .frame(width: 90, height: 130)
+                                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                                } else {
+                                                    RoundedRectangle(cornerRadius: 8)
+                                                        .fill(Color.gray.opacity(0.3))
+                                                        .frame(width: 90, height: 130)
+                                                        .overlay(Image(systemName: "doc.text.fill").foregroundColor(.white.opacity(0.4)))
+                                                }
+                                                Text(article.title)
+                                                    .font(.caption.bold())
+                                                    .foregroundColor(.white)
+                                                    .lineLimit(2)
+                                                    .frame(width: 90)
+                                            }
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+                                .padding(.horizontal, 16)
+                            }
+                        }
+
                         // Video results
                         if !results.isEmpty {
                             Text("Videos")
@@ -145,7 +244,20 @@ struct SearchView: View {
         #endif
         .navigationBarBackButtonHidden(true)
         .task {
-            allAssets = (try? await api.fetchAssets()) ?? []
+            let contentAPI = ContentAPI.shared
+            let pre = ContentPreloader.shared
+            async let assetsTask = api.fetchAssets()
+            async let booksTask: [GOBook] = {
+                if let cached = pre.books { return cached }
+                return (try? await contentAPI.fetchBooks()) ?? []
+            }()
+            async let articlesTask: [GOArticle] = {
+                if let cached = pre.articles { return cached }
+                return (try? await contentAPI.fetchArticles()) ?? []
+            }()
+            allAssets = (try? await assetsTask) ?? []
+            allBooks = await booksTask
+            allArticles = await articlesTask
             if music.isAuthorized && music.curatedAlbums.isEmpty {
                 await music.loadCuratedAlbums(ids: CuratedMusic.albumIDs)
             }

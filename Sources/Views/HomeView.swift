@@ -17,7 +17,7 @@ struct HomeView: View {
     @State private var showWatchTimer = false
     @State private var showSearch = false
     @State private var showLivePinLock = false
-    @State private var currentVideoIndex = 0
+    @State private var currentVideoIndex = 1 // starts at 1 because of loop padding
 
     // Featured content from Firestore
     @State private var featuredAudio: [GOAudioAsset] = []
@@ -123,9 +123,22 @@ struct HomeView: View {
 
                     // ── 🎬 WATCH SECTION (Videos at top) ──
                     if !displayAssets.isEmpty {
+                        // Build looping array: [last, 0, 1, ..., n-1, first]
+                        let loopAssets: [(index: Int, asset: MuxAsset)] = {
+                            let items = displayAssets
+                            guard items.count > 1 else { return items.enumerated().map { ($0.offset, $0.element) } }
+                            var arr: [(Int, MuxAsset)] = []
+                            arr.append((-1, items.last!))           // sentinel: copy of last
+                            for (i, a) in items.enumerated() { arr.append((i, a)) }
+                            arr.append((items.count, items.first!)) // sentinel: copy of first
+                            return arr
+                        }()
+                        let realCount = displayAssets.count
+
                         ZStack(alignment: .bottom) {
                             TabView(selection: $currentVideoIndex) {
-                                ForEach(Array(displayAssets.enumerated()), id: \.element.id) { index, asset in
+                                ForEach(Array(loopAssets.enumerated()), id: \.offset) { padIdx, pair in
+                                    let asset = pair.asset
                                     VStack(spacing: 6) {
                                         CachedAsyncImage(url: asset.thumbnailURL, fallbackURL: asset.fallbackThumbnailURL) {
                                             Rectangle()
@@ -179,18 +192,35 @@ struct HomeView: View {
                                         }
                                         #endif
                                     }
-                                    .tag(index)
+                                    .tag(padIdx)
                                 }
                             }
                             .tabViewStyle(.page(indexDisplayMode: .never))
                             .frame(height: UIScreen.main.bounds.width * 9.0/16.0 + 40)
+                            .onChange(of: currentVideoIndex) { newVal in
+                                // Wrap around for infinite loop
+                                if realCount > 1 {
+                                    if newVal == 0 {
+                                        // Swiped left past first → jump to real last
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                            withAnimation(.none) { currentVideoIndex = realCount }
+                                        }
+                                    } else if newVal == realCount + 1 {
+                                        // Swiped right past last → jump to real first
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                            withAnimation(.none) { currentVideoIndex = 1 }
+                                        }
+                                    }
+                                }
+                            }
 
-                            // Page indicator dots
-                            if displayAssets.count > 1 {
+                            // Page indicator dots (mapped to real indices)
+                            if realCount > 1 {
+                                let dotIndex = max(0, min(realCount - 1, currentVideoIndex - 1))
                                 HStack(spacing: 6) {
-                                    ForEach(0..<displayAssets.count, id: \.self) { i in
+                                    ForEach(0..<realCount, id: \.self) { i in
                                         Circle()
-                                            .fill(i == currentVideoIndex ? Color.white : Color.white.opacity(0.35))
+                                            .fill(i == dotIndex ? Color.white : Color.white.opacity(0.35))
                                             .frame(width: 8, height: 8)
                                     }
                                 }
@@ -452,6 +482,16 @@ struct HomeView: View {
     }
 
     func load() async {
+        // If cache has assets, show them immediately (no spinner)
+        if let cached = api.cachedAssets, !cached.isEmpty {
+            let filtered = cached.filter { $0.status == "ready" || $0.status == "preparing" }
+                .filter { $0.category != nil && $0.category != "hidden" }
+            if !filtered.isEmpty {
+                allAssets = cached.filter { $0.status == "ready" || $0.status == "preparing" }
+                recentAssets = filtered.filter { $0.category != "sermon" }
+                isLoading = false
+            }
+        }
         if recentAssets.isEmpty { isLoading = true }
 
         // Load video assets + live stream
