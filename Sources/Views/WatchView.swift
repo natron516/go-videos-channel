@@ -51,7 +51,7 @@ struct WatchView: View {
         }
         // "All" — exclude hidden AND sermons (sermons are behind PIN lock)
         return allAssets.filter { asset in
-            asset.category != nil && asset.category != "hidden" && asset.category != "sermon"
+            asset.category != nil && asset.category != "hidden" && asset.category != "admin_only" && asset.category != "sermon"
         }
     }
 

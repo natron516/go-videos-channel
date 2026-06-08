@@ -47,7 +47,7 @@ class MuxAPI: ObservableObject {
     func fetchAssets() async throws -> [MuxAsset] {
         // Return cache immediately if fresh enough
         let all = try await fetchAllAssets()
-        return all.filter { $0.category != nil && $0.category != "hidden" }
+        return all.filter { $0.category != nil && $0.category != "hidden" && $0.category != "admin_only" }
     }
 
     @discardableResult
