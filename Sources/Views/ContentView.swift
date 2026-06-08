@@ -463,12 +463,16 @@ struct TVContentView: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
-            Image("AppBackground")
-                .resizable()
-                .aspectRatio(contentMode: .fill)
-                .ignoresSafeArea()
-                .opacity(0.35)
+            LinearGradient(
+                colors: [
+                    Color(red: 0.08, green: 0.08, blue: 0.10),
+                    Color(red: 0.15, green: 0.15, blue: 0.18),
+                    Color(red: 0.08, green: 0.08, blue: 0.10)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
 
             HStack(spacing: 0) {
                 TVSidebar(selection: $selection)
