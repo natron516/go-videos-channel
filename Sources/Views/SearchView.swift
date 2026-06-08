@@ -134,6 +134,7 @@ struct SearchView: View {
                             }
                         }
 
+                        #if !os(tvOS)
                         // Book results
                         if !bookResults.isEmpty {
                             Text("Books")
@@ -213,6 +214,7 @@ struct SearchView: View {
                                 .padding(.horizontal, 16)
                             }
                         }
+                        #endif
 
                         // Video results
                         if !results.isEmpty {
