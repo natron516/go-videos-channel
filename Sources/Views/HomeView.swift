@@ -482,6 +482,16 @@ struct HomeView: View {
     }
 
     func load() async {
+        // Wait for splash preloader if it's still running (avoid duplicate network calls)
+        let pre = ContentPreloader.shared
+        if pre.isPreloading && !pre.isComplete {
+            // Wait up to 8s for preloader
+            for _ in 0..<80 {
+                if pre.isComplete { break }
+                try? await Task.sleep(nanoseconds: 100_000_000)
+            }
+        }
+
         // If cache has assets, show them immediately (no spinner)
         if let cached = api.cachedAssets, !cached.isEmpty {
             let filtered = cached.filter { $0.status == "ready" || $0.status == "preparing" }
@@ -503,8 +513,7 @@ struct HomeView: View {
             async let _ = FeaturedManager.shared.fetch()
         }
 
-        // Load featured content from other content types
-        let pre = ContentPreloader.shared
+        // Load featured content from other content types (pre already declared above)
         async let audioResult: [GOAudioAsset] = {
             if let cached = pre.audioAssets { return cached }
             return (try? await contentAPI.fetchAudio()) ?? []
