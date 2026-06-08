@@ -40,7 +40,7 @@ class ContentAPI: ObservableObject {
         let (data, _) = try await URLSession.shared.data(for: req)
         let wrapper = try JSONDecoder().decode(BooksResponse.self, from: data)
         return wrapper.books
-            .filter { $0.category != "hidden" && $0.category != "admin_only" }
+            .filter { $0.category != "hidden" }
             .sorted { $0.sortOrder < $1.sortOrder }
     }
 
@@ -51,7 +51,7 @@ class ContentAPI: ObservableObject {
         let (data, _) = try await URLSession.shared.data(for: req)
         let wrapper = try JSONDecoder().decode(ArticlesResponse.self, from: data)
         return wrapper.articles
-            .filter { $0.published && $0.category != "hidden" && $0.category != "admin_only" }
+            .filter { $0.published && $0.category != "hidden" }
             .sorted { $0.sortOrder < $1.sortOrder }
     }
 
@@ -62,7 +62,7 @@ class ContentAPI: ObservableObject {
         let (data, _) = try await URLSession.shared.data(for: req)
         let wrapper = try JSONDecoder().decode(PodcastsResponse.self, from: data)
         return wrapper.podcasts
-            .filter { $0.enabled && $0.category != "hidden" && $0.category != "admin_only" }
+            .filter { $0.enabled && $0.category != "hidden" }
             .sorted { $0.sortOrder < $1.sortOrder }
     }
 
@@ -81,7 +81,7 @@ class ContentAPI: ObservableObject {
         let (data, _) = try await URLSession.shared.data(for: req)
         let wrapper = try JSONDecoder().decode(AudioResponse.self, from: data)
         return wrapper.audio
-            .filter { $0.category != "hidden" && $0.category != "admin_only" }
+            .filter { $0.category != "hidden" }
             .sorted { $0.sortOrder < $1.sortOrder }
     }
 
@@ -92,7 +92,7 @@ class ContentAPI: ObservableObject {
         let (data, _) = try await URLSession.shared.data(for: req)
         let wrapper = try JSONDecoder().decode(SeriesResponse.self, from: data)
         return wrapper.series
-            .filter { $0.enabled && $0.category != "hidden" && $0.category != "admin_only" }
+            .filter { $0.enabled && $0.category != "hidden" }
             .sorted { $0.sortOrder < $1.sortOrder }
     }
 

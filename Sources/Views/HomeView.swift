@@ -495,7 +495,7 @@ struct HomeView: View {
         // If cache has assets, show them immediately (no spinner)
         if let cached = api.cachedAssets, !cached.isEmpty {
             let filtered = cached.filter { $0.status == "ready" || $0.status == "preparing" }
-                .filter { $0.category != nil && $0.category != "hidden" && $0.category != "admin_only" }
+                .filter { $0.category != nil && $0.category != "hidden" }
             if !filtered.isEmpty {
                 allAssets = cached.filter { $0.status == "ready" || $0.status == "preparing" }
                 recentAssets = filtered.filter { $0.category != "sermon" }
@@ -537,7 +537,7 @@ struct HomeView: View {
 
         let fetched = (try? await assets) ?? []
         allAssets = fetched
-        recentAssets = fetched.filter { $0.category != "sermon" && $0.category != "hidden" && $0.category != "admin_only" }
+        recentAssets = fetched.filter { $0.category != "sermon" && $0.category != "hidden" }
         liveStream = try? await live
         LiveStreamManager.shared.update(stream: liveStream, allAssets: fetched)
         NewContentTracker.shared.update(assets: fetched)
