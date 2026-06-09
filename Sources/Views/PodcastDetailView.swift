@@ -145,20 +145,18 @@ struct PodcastDetailView: View {
     // MARK: - Playback
 
     private func playEpisode(_ episode: GOPodcastEpisode) {
-        // Resume from saved position if available
+        // Resume from saved position if available (seek happens once item is ready)
         let savedPos = PlaybackTracker.shared.getPosition(episode.id)
         audioPlayer.play(
             url: episode.audioUrl,
             title: episode.title,
             artist: podcast.title,
-            coverUrl: episode.imageUrl ?? podcast.artworkUrl
+            coverUrl: episode.imageUrl ?? podcast.artworkUrl,
+            trackId: episode.id,
+            resumeAt: savedPos
         )
-        if savedPos > 0 {
-            audioPlayer.seek(to: savedPos / max(audioPlayer.duration, 1))
-        }
-        // Mark as played and set track ID for position saving
+        // Mark as played
         PlaybackTracker.shared.markPlayed(episode.id)
-        audioPlayer.currentTrackId = episode.id
         if autoplay {
             audioPlayer.onFinish = { [self] in
                 PlaybackTracker.shared.clearPosition(episode.id)

@@ -133,12 +133,16 @@ struct AudioListView: View {
                                     LazyVGrid(columns: columns, spacing: 16) {
                                         ForEach(singleAssets) { asset in
                                             AudioAssetCard(asset: asset) {
+                                                let savedPos = PlaybackTracker.shared.getPosition(asset.id)
                                                 audioPlayer.play(
                                                     url: asset.audioUrl,
                                                     title: asset.title,
                                                     artist: asset.artist,
-                                                    coverUrl: asset.coverImageUrl
+                                                    coverUrl: asset.coverImageUrl,
+                                                    trackId: asset.id,
+                                                    resumeAt: savedPos
                                                 )
+                                                PlaybackTracker.shared.markPlayed(asset.id)
                                             }
                                         }
                                     }

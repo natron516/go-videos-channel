@@ -222,18 +222,15 @@ struct SeriesDetailView: View {
             presentPlayer(url: url)
         } else {
             let savedPos = PlaybackTracker.shared.getPosition(episode.id)
-            audioPlayer.currentTrackId = episode.id
             audioPlayer.play(
                 url: episode.audioUrl,
                 title: episode.title,
                 artist: episode.artist,
-                coverUrl: episode.coverImageUrl
+                coverUrl: episode.coverImageUrl,
+                trackId: episode.id,
+                resumeAt: savedPos
             )
-            if savedPos > 0 {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    audioPlayer.seek(to: savedPos / max(audioPlayer.duration, 1))
-                }
-            }
+            PlaybackTracker.shared.markPlayed(episode.id)
             if autoplay {
                 audioPlayer.onFinish = { [self] in
                     PlaybackTracker.shared.clearPosition(episode.id)

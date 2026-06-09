@@ -18,6 +18,9 @@ class AudioPlayerManager: ObservableObject {
     /// ID of the currently playing track (for position saving)
     var currentTrackId: String?
 
+    /// Position (seconds) to seek to once the item is ready to play
+    private var pendingResumePosition: Double = 0
+
     /// Called when the current track finishes playing (for autoplay)
     var onFinish: (() -> Void)?
 
@@ -33,6 +36,23 @@ class AudioPlayerManager: ObservableObject {
 
     private init() {
         setupRemoteCommandCenter()
+        // Save position when the app goes to background or is about to terminate
+        #if !os(tvOS)
+        NotificationCenter.default.addObserver(forName: UIApplication.willResignActiveNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.saveCurrentPosition() }
+        }
+        NotificationCenter.default.addObserver(forName: UIApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
+            Task { @MainActor in self?.saveCurrentPosition() }
+        }
+        #endif
+    }
+
+    /// Persist the current playback position immediately (if we have a track).
+    private func saveCurrentPosition() {
+        guard let trackId = currentTrackId, let p = player else { return }
+        let secs = p.currentTime().seconds
+        guard secs.isFinite, secs > 0 else { return }
+        PlaybackTracker.shared.savePosition(trackId, seconds: secs)
     }
 
     /// Activate the audio session on-demand (called right before playback starts).
@@ -113,7 +133,7 @@ class AudioPlayerManager: ObservableObject {
 
     // MARK: - Public API
 
-    func play(url urlString: String, title: String, artist: String, coverUrl: String? = nil) {
+    func play(url urlString: String, title: String, artist: String, coverUrl: String? = nil, trackId: String? = nil, resumeAt: Double = 0) {
         guard let url = URL(string: urlString) else { return }
 
         // Dismiss any active video player first
@@ -132,6 +152,8 @@ class AudioPlayerManager: ObservableObject {
         currentTitle = title
         currentArtist = artist
         currentCoverUrl = coverUrl
+        if let trackId { currentTrackId = trackId }
+        pendingResumePosition = resumeAt
         isLoading = true
         hasItem = true
 
@@ -149,6 +171,12 @@ class AudioPlayerManager: ObservableObject {
                     self.isLoading = false
                     if let dur = self.player?.currentItem?.duration, !dur.isIndefinite {
                         self.duration = CMTimeGetSeconds(dur)
+                    }
+                    // Resume from saved position now that the item is ready
+                    if self.pendingResumePosition > 0 {
+                        let resumeTime = CMTime(seconds: self.pendingResumePosition, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+                        self.player?.seek(to: resumeTime, toleranceBefore: .zero, toleranceAfter: .zero)
+                        self.pendingResumePosition = 0
                     }
                     self.player?.rate = self.playbackRate
                     self.isPlaying = true
@@ -208,6 +236,7 @@ class AudioPlayerManager: ObservableObject {
     func pause() {
         player?.pause()
         isPlaying = false
+        saveCurrentPosition()
         updateNowPlayingInfo()
     }
 
@@ -218,6 +247,7 @@ class AudioPlayerManager: ObservableObject {
     }
 
     func stop() {
+        saveCurrentPosition()
         if let obs = timeObserver, let p = player {
             p.removeTimeObserver(obs)
             timeObserver = nil
@@ -232,6 +262,8 @@ class AudioPlayerManager: ObservableObject {
         currentTitle = ""
         currentArtist = ""
         currentCoverUrl = nil
+        currentTrackId = nil
+        pendingResumePosition = 0
         cancellables.removeAll()
         playbackRate = 1.0
         clearNowPlayingInfo()

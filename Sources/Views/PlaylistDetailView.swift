@@ -182,7 +182,9 @@ struct PlaylistDetailView: View {
                                                         url: audio.audioUrl,
                                                         title: audio.title,
                                                         artist: audio.artist,
-                                                        coverUrl: audio.coverImageUrl
+                                                        coverUrl: audio.coverImageUrl,
+                                                        trackId: audio.id,
+                                                        resumeAt: PlaybackTracker.shared.getPosition(audio.id)
                                                     )
                                                 } onRemove: {
                                                     manager.removeItem(

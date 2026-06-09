@@ -320,7 +320,7 @@ struct HomeView: View {
                 }
             case .audio(let audio):
                 Button {
-                    AudioPlayerManager.shared.play(url: audio.audioUrl, title: audio.title, artist: audio.artist, coverUrl: audio.coverImageUrl)
+                    AudioPlayerManager.shared.play(url: audio.audioUrl, title: audio.title, artist: audio.artist, coverUrl: audio.coverImageUrl, trackId: audio.id, resumeAt: PlaybackTracker.shared.getPosition(audio.id))
                 } label: {
                     audioCircleContent(title: item.title, imageUrl: item.imageUrl, size: circleSize, icon: "waveform")
                 }
