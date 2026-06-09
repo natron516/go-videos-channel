@@ -20,7 +20,7 @@ struct GOPodcast: Identifiable, Codable {
         id = try container.decode(String.self, forKey: .id)
         title = try container.decode(String.self, forKey: .title)
         feedUrl = try container.decodeIfPresent(String.self, forKey: .feedUrl) ?? ""
-        description = try container.decodeIfPresent(String.self, forKey: .description) ?? ""
+        description = (try container.decodeIfPresent(String.self, forKey: .description) ?? "").strippingHTML()
         artworkUrl = try container.decodeIfPresent(String.self, forKey: .artworkUrl)
         category = try container.decodeIfPresent(String.self, forKey: .category) ?? "general"
         enabled = try container.decodeIfPresent(Bool.self, forKey: .enabled) ?? true
@@ -53,6 +53,36 @@ struct GOPodcastEpisode: Identifiable, Codable {
 
     enum CodingKeys: String, CodingKey {
         case title, description, audioUrl, pubDate, duration, imageUrl
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        title = try container.decodeIfPresent(String.self, forKey: .title) ?? ""
+        // RSS feeds often embed HTML in descriptions — strip to plain text
+        description = (try container.decodeIfPresent(String.self, forKey: .description) ?? "").strippingHTML()
+        audioUrl = try container.decodeIfPresent(String.self, forKey: .audioUrl) ?? ""
+        pubDate = try container.decodeIfPresent(String.self, forKey: .pubDate)
+        duration = try container.decodeIfPresent(String.self, forKey: .duration)
+        imageUrl = try container.decodeIfPresent(String.self, forKey: .imageUrl)
+    }
+}
+
+extension String {
+    /// Strip HTML tags and decode common entities, returning trimmed plain text.
+    func strippingHTML() -> String {
+        var text = replacingOccurrences(of: "<br\\s*/?>", with: "\n", options: [.regularExpression, .caseInsensitive])
+        text = text.replacingOccurrences(of: "</p>", with: "\n", options: .caseInsensitive)
+        text = text.replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+        let entities: [String: String] = [
+            "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": "\"",
+            "&#39;": "'", "&apos;": "'", "&nbsp;": " ", "&#160;": " "
+        ]
+        for (entity, char) in entities {
+            text = text.replacingOccurrences(of: entity, with: char)
+        }
+        // Collapse runs of blank lines/whitespace
+        text = text.replacingOccurrences(of: "\n{3,}", with: "\n\n", options: .regularExpression)
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
 
