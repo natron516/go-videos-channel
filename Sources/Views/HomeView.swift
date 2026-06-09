@@ -26,11 +26,12 @@ struct HomeView: View {
     @State private var featuredBooks: [GOBook] = []
     @State private var featuredArticles: [GOArticle] = []
 
-    /// Assets to display — featured order when a curation list is set, otherwise recent.
+    /// Assets to display — only when a featured curation list is set.
+    /// Empty list hides the video carousel entirely.
     private var displayAssets: [MuxAsset] {
         let ids = featured.featuredIds
-        guard !ids.isEmpty else { return recentAssets }
-        let lookup = Dictionary(uniqueKeysWithValues: recentAssets.map { ($0.id, $0) })
+        guard !ids.isEmpty else { return [] }
+        let lookup = Dictionary(uniqueKeysWithValues: allAssets.map { ($0.id, $0) })
         return ids.compactMap { lookup[$0] }
     }
 
