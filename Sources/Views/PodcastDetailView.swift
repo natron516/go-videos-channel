@@ -268,12 +268,6 @@ struct EpisodeRow: View {
                                 .lineLimit(1)
                         }
                     }
-                    if !episode.description.isEmpty {
-                        Text(episode.description)
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                            .lineLimit(2)
-                    }
                 }
                 Spacer()
                 Image(systemName: isCurrentlyPlaying ? "waveform" : "play.circle")
